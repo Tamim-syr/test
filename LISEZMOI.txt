@@ -1,0 +1,210 @@
+TERRES VIVES — JEU DE FERME MULTIJOUEUR POUR LA CLASSE
+=======================================================
+
+Le jeu tourne sur UN seul PC (le "serveur"). Les autres élèves jouent
+simplement dans leur navigateur, sur le même réseau (Wi-Fi ou câble).
+
+
+1. CE QU'IL FAUT
+----------------
+- Node.js 18 ou plus, uniquement sur le PC serveur : https://nodejs.org
+  (version "LTS", installation par défaut). Rien d'autre à installer.
+- Tous les PC sur le même réseau.
+
+
+2. LANCER LE SERVEUR
+--------------------
+Windows : double-cliquez sur  lancer-serveur.bat
+Mac     : double-cliquez sur  lancer-serveur.command
+           (la première fois : clic droit > Ouvrir)
+Linux   : ./lancer-serveur.sh
+
+Ou dans un terminal, dans ce dossier :   node server.js
+
+La fenêtre affiche l'adresse à donner à la classe, par exemple :
+    Pour la classe   : http://192.168.1.25:3000
+
+Si Windows demande l'autorisation du pare-feu pour Node.js,
+cochez "Réseaux privés" et acceptez, sinon les autres ne pourront
+pas se connecter.
+
+Laissez la fenêtre ouverte pendant la partie. Ctrl+C pour arrêter :
+la partie est sauvegardée.
+
+SALLE D'ATTENTE : au lancement du serveur, le monde est en pause.
+Chaque élève qui se connecte apparaît dans la salle d'attente.
+Le premier connecté est l'HÔTE : il choisit le nombre de joueurs
+(1 à 8). Dès que ce nombre est atteint, un compte à rebours de 5 s
+démarre et tout le monde entre dans la partie en même temps.
+L'hôte peut aussi cliquer "Lancer maintenant". Ceux qui arrivent
+après le lancement entrent directement dans la partie.
+
+CARTE À LA TAILLE DE LA PARTIE : au lancement, seules les fermes
+des joueurs choisis par l'hôte existent ; les autres emplacements
+deviennent de la forêt. Si la partie est complète, un nouvel élève
+est refusé. Les anciennes fermes ne sont jamais effacées : elles
+réapparaissent quand la partie compte plus de joueurs.
+
+OBSERVER LES AUTRES FERMES : cliquez sur la mini-carte (en haut à
+droite) pour regarder une ferme en direct. Échap, une touche de
+déplacement ou un clic sur votre ferme pour revenir. Impossible la
+nuit : la mini-carte ne montre alors que votre ferme.
+
+PRÉPARATION : pendant les 10 premières minutes après le lancement,
+personne ne peut sortir de sa ferme et aucun combat n'est possible.
+Un compte à rebours s'affiche en bas de l'écran (il clignote en rouge
+les 30 dernières secondes). Durée réglable en haut de server.js
+(PREPARATION_MIN, 0 = pas de préparation).
+
+QUITTER LA PARTIE : fermer l'onglet ou "Aide > Se déconnecter"
+sauvegarde tout immédiatement. La ferme devient FERMÉE : personne ne
+peut y entrer (les visiteurs sont renvoyés chez eux), ni l'attaquer,
+ni la piller, ni la brouiller, et il n'y a pas de voleurs. Les
+ouvriers et machines GPS continuent de travailler.
+
+MENU ADMIN (réservé à l'organisateur)
+-------------------------------------
+Le code admin est fixe (code personnel de l'organisateur).
+Sur le site, bouton "⚙ Admin" (écran d'accueil, salle
+d'attente, ou Aide en jeu), tapez le code. Vous pouvez alors :
+  - lancer la partie, ou remettre tout le monde en salle d'attente
+  - PARTIES : renommer la partie en cours, en créer une nouvelle,
+    recharger une ancienne (rien n'est perdu), "Supprimer" envoie à
+    la corbeille d'où on peut "Restaurer" (ou supprimer définitivement).
+    Les parties sont rangées dans le dossier  parties/
+  - EXCLURE un joueur (bloque son nom et son ordinateur) puis le
+    RÉINTÉGRER quand vous voulez (liste dans exclus.json)
+  - changer le nombre de joueurs MÊME EN PLEINE PARTIE (ajoute des
+    fermes tout de suite pour ceux qui arrivent en retard)
+  - terminer ou relancer la préparation de 10 min
+  - envoyer une annonce à toute la classe
+  - par joueur : donner/retirer de l'argent, déconnecter, effacer
+    son mot de passe, libérer sa ferme (efface tout)
+5 mauvais codes = blocage 60 s.
+Si un élève a une page pas à jour, le jeu lui demande de faire
+Ctrl+F5 avant de pouvoir se connecter.
+
+Commandes à taper dans la fenêtre du serveur :
+  liste        voir les joueurs et leurs fermes
+  mdp NOM      efface le mot de passe oublié d'un élève : à sa
+               prochaine connexion, il en choisit un nouveau
+  lancer       lance la partie tout de suite
+  salon        remet tout le monde en salle d'attente (pause)
+  joueurs N    change le nombre de joueurs attendus
+  ouvrir       termine la préparation tout de suite
+
+
+3. REJOINDRE LA PARTIE
+----------------------
+Chaque élève ouvre l'adresse dans Chrome, Edge ou Firefox.
+Une VIDÉO EXPLICATIVE animée s'ouvre d'abord (avec voix en français,
+sous-titres et chapitres) : elle explique tout le jeu et ses objectifs.
+"Passer" pour la fermer ; on la revoit depuis l'accueil ou l'onglet Aide.
+Ensuite on tape son nom + son MOT DE PASSE et on clique sur
+"Rejoindre la partie".
+- Nouveau joueur : le mot de passe choisi (4 caractères minimum)
+  protège la ferme. Personne d'autre ne peut jouer avec ce nom.
+- Même nom + même mot de passe = on retrouve sa ferme, son argent,
+  ses machines.
+- "Se souvenir de moi" : à cocher seulement sur SON ordinateur
+  (jamais sur un PC partagé de la salle).
+- Onglet Aide > Mon compte : changer le mot de passe, se déconnecter,
+  ou déconnecter tous les ordinateurs mémorisés.
+- Ne pas utiliser un vrai mot de passe (réseaux sociaux, ENT…) :
+  le jeu tourne en http simple sur le réseau de la classe.
+- 5 erreurs de mot de passe = blocage 60 s (la tentative s'affiche
+  dans la fenêtre du serveur).
+- Anciennes fermes (sauvegarde d'avant) : le premier mot de passe
+  tapé devient le leur, donc chacun doit se reconnecter vite.
+- 8 fermes maximum.
+- Sur le PC serveur lui-même : http://localhost:3000
+
+
+4. LA PARTIE NE S'ARRÊTE JAMAIS
+-------------------------------
+Tout est enregistré dans le fichier  sauvegarde.json  (toutes les
+30 secondes, à chaque nouveau jour et à l'arrêt).
+- Pour reprendre plus tard : relancez le serveur, tout est là.
+- Pour recommencer à zéro : arrêtez le serveur et supprimez
+  sauvegarde.json.
+- Pour changer de port : PORT=8080 node server.js
+
+
+5. COMMANDES
+------------
+ZQSD (ou flèches)  se déplacer / conduire
+Espace             utiliser l'outil (à pied) / abaisser l'outil (véhicule)
+E                  monter/descendre, décharger devant sa ferme, sinon ouvre la boutique (partout)
+1 à 5              outils (bêche, semences, arrosoir, faucille, engrais)
+R                  changer de semence
+F                  tirer (fusil à acheter, balles limitées) ou coup de poing sans arme
+Molette / clic     choisir la semence (blé, maïs, fraise…) quand la graine (2) est en main
+T                  coup de fouet à un ouvrier
+X                  marche arrière
+Entrée             chat de la classe
+B P G M L          Boutique, Défense, Équipe, Marché, Classement et pactes
+
+
+6. CHACUN POUR SOI
+------------------
+- Tout le monde est ennemi par défaut : on peut se tirer dessus,
+  voler les récoltes mûres des autres (faucille + Espace dans leurs
+  champs) et piller leur entrepôt (E devant leur ferme, toutes les 45 s).
+- K.O. : le perdant paie une rançon (5 % de son argent, max 500 €) et
+  perd la moitié de son sac au profit du gagnant. Il revient à sa ferme
+  6 s plus tard, protégé quelques secondes.
+- On peut mettre K.O. les policiers, chiens et snipers des autres
+  (absents 2 min) et détruire leurs tours.
+- Vos tours, snipers, policiers et chiens attaquent les élèves ennemis
+  qui entrent sur votre ferme.
+- 3 K.O. dans la journée = RECHERCHÉ : 300 € pour qui vous met K.O.
+- Le village est une zone neutre : pas de combat.
+- Pas d'arme au départ : F = coup de poing. Fusil 1 500 € (onglet
+  Défense, 30 balles incluses), puis paquets de balles (max 400).
+- Après un K.O., TRÊVE de 5 min entre les deux joueurs : ils ne peuvent
+  plus se battre ni entrer dans la ferme de l'autre (compte à rebours
+  en haut à gauche). Le vainqueur est raccompagné chez lui.
+- PRIMES : onglet Classement > "Mettre une prime" sur un rival (min.
+  200 €). Celui qui le met K.O. encaisse tout. Chaque matin, la
+  coopérative met 400 € sur la ferme la plus riche.
+- Pacte d'amitié (touche L) : plus de combat ni de vol entre alliés.
+  Le rompre prévient toute la classe.
+- Un joueur déconnecté est protégé : ni voleurs, ni pillage, ni combat.
+- BROUILLEUR (armurerie du village, 3 000 €, 1 par jour de jeu) :
+  E devant l'armurerie, choisissez un ennemi en ligne. 10 s plus tard,
+  ses tours, caméras et lampadaires sont coupés pendant 60 s. Il est
+  prévenu, et sa ferme est ensuite protégée 5 min contre un autre
+  brouilleur. Impossible sur un allié.
+
+
+7. GRANDIR SANS FIN
+-------------------
+- Boutique > "Agrandir la ferme" : niveaux illimités. Chaque niveau :
+  +6 % de récolte, +1 000 kg de stockage, +2 points de vie,
+  +1 tour, et plus d'ouvriers, de snipers, de policiers et de chiens.
+  Le prix augmente à chaque niveau.
+- Le sac à dos, l'entrepôt et le gilet pare-balles s'améliorent aussi
+  sans limite (de plus en plus cher).
+
+
+8. FONCTIONNALITÉS
+------------------
+- Monde persistant, grande carte de 8 fermes et un village central
+- Chaque ferme : 4 champs, entrepôt, garage, haies et 4 entrées
+- 6 cultures, arrosage, engrais, météo partagée, journées de 8 min et nuits de 3 min (réglable en haut de server.js)
+- Tracteurs, moissonneuses, module GPS = tout se fait tout seul
+- Ouvriers autonomes, plan de culture, fouet, moral, grève, primes
+- Chaque nuit, des vagues de voleurs de plus en plus grosses :
+  voleurs, rapides, costauds, saboteurs (détruisent les tours),
+  chef de bande toutes les 5 nuits
+- Défenses : tours de guet (3 niveaux), snipers, policiers,
+  chiens de garde, lampadaires, clôture électrique, caméras
+- Fusil à visée automatique (3 niveaux), primes par voleur
+- Entraide : on touche la prime en défendant la ferme d'un ami,
+  envoi d'argent entre joueurs
+- Marché partagé (les ventes font baisser les prix pour tous)
+- Commandes de la coopérative : le premier qui livre gagne
+- Classement (avec le niveau de ferme), chat de classe
+- Brouilleur, ferme améliorable sans fin, vidéo explicative à l'ouverture
+- Protection hors ligne : pas de voleurs quand on est déconnecté,
+  les machines GPS et les ouvriers continuent de travailler
