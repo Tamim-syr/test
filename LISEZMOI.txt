@@ -46,9 +46,13 @@ est refusé. Les anciennes fermes ne sont jamais effacées : elles
 réapparaissent quand la partie compte plus de joueurs.
 
 OBSERVER LES AUTRES FERMES : cliquez sur la mini-carte (en haut à
-droite) pour regarder une ferme en direct. Échap, une touche de
-déplacement ou un clic sur votre ferme pour revenir. Impossible la
-nuit : la mini-carte ne montre alors que votre ferme.
+droite) pour regarder une ferme en direct. Pendant la vue,
+ZQSD / flèches (ou le joystick) déplacent la vue en continu (Maj =
+plus vite), et on peut aussi garder le clic enfoncé et glisser sur
+la mini-carte : le cadre blanc suit. Votre personnage reste sur
+place pendant ce temps. Échap, « Revenir » ou un clic sur votre
+ferme pour revenir. Impossible la nuit : la mini-carte ne montre
+alors que votre ferme.
 
 PRÉPARATION : pendant les 10 premières minutes après le lancement,
 personne ne peut sortir de sa ferme et aucun combat n'est possible.

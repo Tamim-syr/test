@@ -35,7 +35,7 @@ button{font:inherit;color:inherit}
 .hud-tl .v{font-family:var(--f-m);font-size:16px}
 .raid{color:var(--bad);font-weight:700}
 .hud-tr{position:absolute;top:10px;right:10px;padding:6px;display:grid;gap:6px;justify-items:end}
-#mini{display:block;border-radius:4px;image-rendering:pixelated;width:212px;height:104px;cursor:pointer}
+#mini{display:block;border-radius:4px;image-rendering:pixelated;width:212px;height:104px;cursor:grab;touch-action:none}#mini:active{cursor:grabbing}.vhint{opacity:.75;font-size:12px}
 .menu{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:212px}
 .hud-bl{position:absolute;left:10px;bottom:10px;padding:8px 12px;display:grid;gap:4px;min-width:190px;max-width:260px}
 .bar{height:6px;background:#2a3825;border-radius:3px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent)}
@@ -323,7 +323,7 @@ const FEATURES=[
 
 
 /* ======================= État client ======================= */
-const CLIENT_VERSION='2026-10-08-centre2';
+const CLIENT_VERSION='2026-10-08-centre3';
 function showErr(msg){const st=$('#status');st.hidden=false;st.style.borderColor='#B0382B';st.innerHTML=msg;clearTimeout(showErr.t);if(!showErr.sticky)showErr.t=setTimeout(()=>{st.hidden=true;st.style.borderColor=''},8000)}
 window.addEventListener('blur',()=>showBoard(false));
 window.addEventListener('error',e=>{if(joined)showErr('Erreur dans la page : '+String(e.message||e).slice(0,160)+'<br><span class="small muted">Faites Ctrl+F5. Si ça continue, remplacez server.js ET client.html puis redémarrez le serveur.</span>')});
@@ -435,7 +435,7 @@ gameEl.addEventListener('keydown',e=>{
   if(!joined)return;
   if(chatOpen)return;
   if(panel){if(e.code==='Escape')closePanel();return}
-  if(viewAt&&(e.code==='Escape'||['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyQ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))){setView(null);if(e.code==='Escape')return}
+  if(viewAt&&e.code==='Escape'){setView(null);return}
   const k=e.code,ch=(e.key||'').toLowerCase();keys[k]=true;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(k))e.preventDefault();
   if(k==='Tab'){showBoard(true);return}
@@ -476,7 +476,7 @@ function predictMe(dt){
   const e=ents.pl.get(myId);if(!e||!me)return;
   if(me.tp!==localTp||!L){localTp=me.tp;L={x:e.tx,y:e.ty,dx:e.r[4],dy:e.r[5],moving:false};e.x=L.x;e.y=L.y}
   if(!predicting()){L.x=e.x;L.y=e.y;return}
-  let ix=0,iy=0;if(!panel&&!chatOpen){if(isLeft())ix--;if(isRight())ix++;if(isUp())iy--;if(isDown())iy++;ix+=joy.x;iy+=joy.y}
+  let ix=0,iy=0;if(!panel&&!chatOpen&&!viewAt){if(isLeft())ix--;if(isRight())ix++;if(isUp())iy--;if(isDown())iy++;ix+=joy.x;iy+=joy.y}
   const len=Math.hypot(ix,iy);if(len>1){ix/=len;iy/=len}
   L.moving=len>.15;
   if(me.stun)L.moving=false;
@@ -486,7 +486,7 @@ function predictMe(dt){
 }
 function sendInput(force){
   if(!joined)return;
-  let ix=0,iy=0;if(!panel&&!chatOpen){if(isLeft())ix--;if(isRight())ix++;if(isUp())iy--;if(isDown())iy++;ix+=joy.x;iy+=joy.y}
+  let ix=0,iy=0;if(!panel&&!chatOpen&&!viewAt){if(isLeft())ix--;if(isRight())ix++;if(isUp())iy--;if(isDown())iy++;ix+=joy.x;iy+=joy.y}
   const o={t:'in',ix:+ix.toFixed(2),iy:+iy.toFixed(2),use:useHeld&&!panel,fire:fireHeld&&!panel,rev:!!keys.KeyX&&!panel};
   if(predicting()&&L){o.px=+L.x.toFixed(3);o.py=+L.y.toFixed(3);o.pdx=L.dx;o.pdy=L.dy;o.mv=L.moving?1:0;o.tp=localTp}
   const s=JSON.stringify(o);const now=performance.now();
@@ -919,12 +919,18 @@ function render(t,dt){
 let miniBase=null;
 const isNightC=()=>{const h=Math.floor(world.tm/60);return h>=21||h<5};
 function viewBanner(){const b=$('#viewb');if(!viewAt){b.hidden=true;return}const s=slotAtC(viewAt.x,viewAt.y);b.hidden=false;
-  const h=`${ic('map',24)}<span>Vue : <b>${s>=0?(pub[s]&&pub[s].o?'ferme de '+escH(pub[s].o):'ferme libre'):inTownY(viewAt.y)?'le village':'la campagne'}</b></span><button class="btn" data-a="viewBack">Revenir · Échap</button>`;if(b._h!==h){b._h=h;b.innerHTML=h}}
+  const h=`${ic('map',24)}<span>Vue : <b>${s>=0?(ACT.length&&!ACT[s]?'la forêt':pub[s]&&pub[s].o?'ferme de '+escH(pub[s].o):'ferme libre'):inTownY(viewAt.y)?'le village':'la campagne'}</b></span><small class="vhint">ZQSD / flèches : déplacer la vue · Maj : plus vite · glisser sur la carte</small><button class="btn" data-a="viewBack">Revenir · Échap</button>`;if(b._h!==h){b._h=h;b.innerHTML=h}}
 function setView(v){viewAt=v;viewBanner()}
-$('#mini').addEventListener('click',e=>{if(!joined||!me||inLobby)return;const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
+let miniDrag=false;
+function miniPos(e){const r=$('#mini').getBoundingClientRect();return{x:Math.max(0,Math.min(W,(e.clientX-r.left)/r.width*W)),y:Math.max(0,Math.min(H,(e.clientY-r.top)/r.height*H))}}
+$('#mini').addEventListener('pointerdown',e=>{if(!joined||!me||inLobby)return;e.preventDefault();const {x,y}=miniPos(e);
   if(isNightC()){toast('La nuit, impossible d’observer les autres fermes : seule la vôtre reste visible','b');return}
-  if(slotAtC(x,y)===myFarm||(viewAt&&Math.hypot(viewAt.x-x,viewAt.y-y)<3)){setView(null);return}
+  if(me.veh){toast('Descendez du véhicule pour observer la carte','b');return}
+  if(slotAtC(x,y)===myFarm&&viewAt&&!miniDrag){setView(null);return}
+  miniDrag=true;try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
   setView({x,y});gameEl.focus({preventScroll:true})});
+$('#mini').addEventListener('pointermove',e=>{if(!miniDrag||!viewAt)return;const {x,y}=miniPos(e);viewAt.x=x;viewAt.y=y;viewBanner()});
+const miniUp=e=>{miniDrag=false};$('#mini').addEventListener('pointerup',miniUp);$('#mini').addEventListener('pointercancel',miniUp);
 function buildMiniBase(){const m=$('#mini');m.width=W;m.height=H;miniBase=m.getContext('2d').createImageData(W,H)}
 function drawMini(){
   if(!miniBase)return;const m=$('#mini'),c=m.getContext('2d'),d=miniBase.data;
@@ -1068,7 +1074,7 @@ function hudUpdate(){
   $('#hudtl').innerHTML=`<div class="k"><span class="lbl">Trésorerie</span><span class="v${me.money<0?' dn':''}">${eur(me.money)}</span></div><div class="k"><span class="lbl">Jour ${world.d}</span><span class="v">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span></div><div class="k"><span class="lbl">${night?'Nuit '+world.n:'Météo'}</span><span>${night?`<span class="raid">${me.raid+[...ents.th.values()].filter(t=>t.r[11]===myFarm).length} intrus</span>`:WXN[world.w]}</span></div><div class="k"><span class="lbl">Entrepôt</span><span class="v">${nf0.format(load)}/${nf0.format(me.cap)} kg</span></div><div class="k" style="min-width:110px"><span class="lbl">Vie${me.inv?' · protégé':''}</span>${me.ko?`<span class="raid">K.O. · retour dans ${me.ko} s</span>`:`<span class="v" style="font-size:14px">${me.hp}/${me.maxHp}</span><div class="bar"><i style="width:${me.hp/me.maxHp*100}%;background:${me.hp/me.maxHp>.5?'#7CC66B':me.hp/me.maxHp>.25?'#F0B43C':'#EF4444'}"></i></div>`}</div>${me.offersIn.length?`<div class="k"><span class="lbl">Pacte proposé</span><button class="btn pri" data-a="open" data-t="classement" style="padding:3px 8px">Répondre (L)</button></div>`:''}`;
   {const left=prepNow(),b=$('#prepb');b.hidden=!(left>0)||inLobby;if(left>0){b.classList.toggle('end',left<=30);b.innerHTML=`${ic('shield',26)}<span>${left<=30?'Ouverture des frontières dans':'Préparation'}<span class="long">${left<=30?'':' : personne ne peut sortir de sa ferme'}</span></span><b>${mmss(left)}</b>`}}
   if(joined&&!inLobby&&lastSnapAt&&performance.now()-lastSnapAt>4000){const st=$('#status');st.hidden=false;st.textContent='Le serveur ne répond plus… vérifiez qu’il est lancé, puis Ctrl+F5'}else if($('#status').textContent.startsWith('Le serveur ne répond'))$('#status').hidden=true;
-  if(viewAt&&isNightC()){setView(null);toast('La nuit tombe : retour sur votre ferme','b')}else if(viewAt&&(joy.x||joy.y||me.veh))setView(null);else if(viewAt)viewBanner();
+  if(viewAt&&isNightC()){setView(null);toast('La nuit tombe : retour sur votre ferme','b')}else if(viewAt&&me.veh)setView(null);else if(viewAt)viewBanner();
   if(me.revenge)$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k"><span class="lbl">Vengeance · ${escH(me.revenge.o)}</span><span class="v" style="color:#FF8A7A">+50 % · ${mmss(me.revenge.t)}</span></div>`);
   for(const tr of (me.truces||[]))$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k trucehud"><span class="lbl">Trêve · ${escH(tr.o)}</span><span class="v">${mmss(tr.t)}</span></div>`);
   renderQuests();renderBoard();
@@ -1234,6 +1240,7 @@ document.addEventListener('change',e=>{const s=e.target.closest('[data-ch]');if(
 let last=performance.now(),hudT=0,miniT=0,panelT=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+  if(viewAt&&joined&&!panel&&!chatOpen){const px2=(isRight()?1:0)-(isLeft()?1:0)+joy.x,py2=(isDown()?1:0)-(isUp()?1:0)+joy.y;if(px2||py2){const sp=(keys.ShiftLeft||keys.ShiftRight?44:24)*dt;viewAt.x=Math.max(0,Math.min(W,viewAt.x+px2*sp));viewAt.y=Math.max(0,Math.min(H,viewAt.y+py2*sp))}}
   if(joined){
     const tn=performance.now(),span=Math.max(30,snapGap*1.05);
     for(const kind of ['pl','ag','th','gu']){for(const e of ents[kind].values()){if(kind==='pl'&&e.r[0]===myId&&predicting())continue;
