@@ -189,7 +189,7 @@ td.n{font-family:var(--f-m);text-align:right}
 .sp.none{opacity:.4}
 .sp .q{font-size:10px;font-family:var(--f-m);color:var(--accent)}
 .sp .ico{width:28px;height:28px}
-.wslot{cursor:default;margin-left:6px}
+.wslot{margin-left:6px}
 .wslot.empty .q{color:var(--bad)}
 .trucehud .v{color:#8FDCFF!important}
 @media (max-width:760px){.sp{width:36px;height:56px}.sp .ico{width:22px;height:22px}}
@@ -299,10 +299,11 @@ const FEATURES=[
  ['Marché partagé','Les ventes de chacun font baisser les prix pour tous. Commandes de la coopérative : le premier qui livre gagne.'],
  ['Classement et chat','Classement par patrimoine, K.O. et pillage, chat de classe (touche Entrée).'],
  ['Protection hors ligne','Quitter la partie sauvegarde tout et ferme votre ferme : personne ne peut y entrer ni l’attaquer (ni voleurs, ni pillage, ni combat). Vos machines GPS et ouvriers continuent de travailler.'],
- ['Brouilleur','À l’armurerie du village (3 000 €, 1 par jour) : coupe pendant 60 s les tours, caméras et lampadaires d’un ennemi en ligne. Il est prévenu 10 s avant.'],
+ ['Brouilleur','À l’armurerie du village (1 par jour) : coupe pendant 60 s les tours, caméras et lampadaires d’un ennemi en ligne. Il est prévenu 10 s avant.'],
  ['Ferme sans limite','Agrandissez votre ferme à l’infini : chaque niveau donne +6 % de récolte, plus de stockage, de vie, de tours et de gardes. Sac, entrepôt et gilet s’améliorent aussi sans fin.'],
  ['Préparation de 10 min','Au lancement, personne ne peut sortir de sa ferme pendant 10 minutes (ni combat) : un compteur en haut de l’écran prévient de l’ouverture.'],
  ['Observer les autres fermes','Cliquez sur la mini-carte pour regarder une autre ferme en direct (Échap pour revenir). Impossible la nuit : seule votre ferme reste visible.'],
+ ['Guerre entre élèves','Dégâts ×2 au fusil et aux poings, rançon jusqu’à 1 200 €, vol de tracteurs (crochetage puis ferrailleur), incendies de champs. Équilibré : rien à gagner contre plus pauvre, vengeance +50 %, antivol.'],
  ['Bâtiments','Touche C : moulin, pressoir, confiturerie, poulailler, ruches, château d’eau, serre, infirmerie, statue géante. Ils produisent et vous rendent plus fort.'],
  ['Contre-attaques','Pièges à loup invisibles, épouvantails qui font fuir les voleurs, canon à purin qui ralentit, abeilles qui piquent, tours blindées qui ripostent de loin.'],
  ['Quêtes, vache et trésors','3 quêtes récompensées chaque jour, vache échappée à attraper, coffres au trésor, food-truck qui paie double. Touche V : lancer une moquerie !'],
@@ -312,7 +313,7 @@ const FEATURES=[
 
 
 /* ======================= État client ======================= */
-const CLIENT_VERSION='2026-10-08-batiments1';
+const CLIENT_VERSION='2026-10-08-centre1';
 function showErr(msg){const st=$('#status');st.hidden=false;st.style.borderColor='#B0382B';st.innerHTML=msg;clearTimeout(showErr.t);if(!showErr.sticky)showErr.t=setTimeout(()=>{st.hidden=true;st.style.borderColor=''},8000)}
 window.addEventListener('error',e=>{if(joined)showErr('Erreur dans la page : '+String(e.message||e).slice(0,160)+'<br><span class="small muted">Faites Ctrl+F5. Si ça continue, remplacez server.js ET client.html puis redémarrez le serveur.</span>')});
 const TS=32;
@@ -324,7 +325,7 @@ let towers=[],bulletsS=[],pacts=[];
 const isAlly=f=>f===myFarm||(me&&me.allies.includes(f));
 const inTownY=y=>y>=34&&y<=44;
 const online=f=>pub[f]&&pub[f].on;
-let lastSnapAt=0,admOk=false,admState=null,admConfirm=-1,BLDS={},PRODUCTS={},builds=[],cow=null,chest=null,questsMin=false,ACT=[],viewAt=null,prepLeft=0,prepAt=0,prepBlockT=-9,inLobby=false,myName='',ws=null,joined=false,panel=null,chatOpen=false,pendingPw='',sessTok='';
+let lastSnapAt=0,admOk=false,admState=null,admConfirm=-1,fires=[],BLDS={},PRODUCTS={},builds=[],cow=null,chest=null,questsMin=false,ACT=[],viewAt=null,prepLeft=0,prepAt=0,prepBlockT=-9,inLobby=false,myName='',ws=null,joined=false,panel=null,chatOpen=false,pendingPw='',sessTok='';
 const STORE={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
 const tokKey=n=>'tv_tok_'+n.toLowerCase();
 const keys={};let useHeld=false,fireHeld=false,joy={x:0,y:0};
@@ -379,7 +380,7 @@ function onMsg(m){
     world={tm:m.tm,d:m.d,n:m.n,w:m.w};prepLeft=m.prep||0;prepAt=performance.now();
     applyTiles(m.ti);
     syncEnts('pl',m.pl);syncEnts('ag',m.ag);syncEnts('ve',m.ve);syncEnts('th',m.th);syncEnts('gu',m.gu);
-    towers=m.to;bulletsS=m.bu;if(m.bd)builds=m.bd;cow=m.cow||null;chest=m.chest||null;
+    towers=m.to;bulletsS=m.bu;if(m.bd)builds=m.bd;fires=m.fire||[];cow=m.cow||null;chest=m.chest||null;
     if(m.pub){pub=m.pub;prices=m.pr;ph=m.ph;contract=m.ct;pacts=m.pacts||pacts}
     const hk=q=>q?[q.tool,q.veh,q.seed,JSON.stringify(q.seeds),q.gun,q.ammo].join('|'):'';const prevTool=hk(me);
     if(m.me)me=m.me;
@@ -434,7 +435,7 @@ gameEl.addEventListener('keydown',e=>{
   if(k==='KeyT')act({a:'whip'});
   if(k.startsWith('Digit'))act({a:'slot',n:+k.slice(5)-1});
   if(ch==='r')act({a:'seed'});
-  if(ch==='c')openPanel('batiments');if(ch==='v')act({a:'emote'});
+  if(ch==='c')openPanel('batiments');if(ch==='i')act({a:'burn'});if(ch==='v')act({a:'emote'});
   if(ch==='b')openPanel('boutique');if(ch==='p')openPanel('defense');if(ch==='g')openPanel('equipe');if(ch==='m')openPanel('marche');if(ch==='l')openPanel('classement');if(ch==='h')openPanel('aide');
   sendInput(true);
 });
@@ -581,6 +582,10 @@ function promptText(){
   if(!me.veh&&cow&&Math.hypot(cow[0]-P.x,cow[1]-P.y)<1.6)return '<kbd>E</kbd>Attraper la vache ! (250 €)';
   if(!me.veh&&chest&&Math.hypot(chest[0]-P.x,chest[1]-P.y)<1.6)return '<kbd>E</kbd>Ouvrir le coffre au trésor';
   if(me.stun)return 'Coincé dans un piège à loup !';
+  if(me.pick>=0)return `Crochetage en cours… ${me.pick} % (ne bougez pas)`;
+  if(me.veh){const v=myVeh();if(v&&v.r[1]!==myFarm){const dr=SLOTS[myFarm].door;return Math.hypot(v.x-dr.x-.5,v.y-dr.y-.5)<3.5?'<kbd>E</kbd>Revendre le véhicule volé au ferrailleur':'Véhicule volé : ramenez-le devant VOTRE ferme pour le revendre'}}
+  if(!me.veh){for(const v of ents.ve.values()){if(v.r[1]===myFarm||isAlly(v.r[1])||truceC(v.r[1])||!online(v.r[1]))continue;if(Math.hypot(v.x-P.x,v.y-P.y)<1.8)return `<kbd>E</kbd>Voler ${v.r[11]} (crochetage)`}}
+  {const fx2=Math.floor(P.x+P.r[4]*.8),fy2=Math.floor(P.y+P.r[5]*.8),i=idx(fx2,fy2);if(fires.includes(i)&&fieldOf[i]>=0&&((fieldOf[i]>>2)===myFarm||isAlly(fieldOf[i]>>2)))return '<kbd>3</kbd> arrosoir puis <kbd>Espace</kbd> : éteindre le feu !'}
   if(me.veh){const v=myVeh();if(v&&v.r[10]>0&&Math.hypot(v.x-door.x-.5,v.y-door.y-.5)<3.2)return '<kbd>E</kbd>Vider la trémie à l’entrepôt';return `<kbd>E</kbd>Descendre · <kbd>Espace</kbd>${v&&v.r[7]?'Relever':'Abaisser'} l’outil · <kbd>X</kbd>Reculer`}
   for(const v of ents.ve.values()){if(v.r[1]!==myFarm)continue;if(Math.hypot(v.x-P.x,v.y-P.y)<1.7&&Math.hypot(v.x-P.x,v.y-P.y)<dd)return `<kbd>E</kbd>Monter dans ${v.r[11]}${v.r[8]?' (met le pilote en pause)':''}`}
   if(dd<2.2)return Object.keys(me.bag).some(k=>me.bag[k]>0)?'<kbd>E</kbd>Décharger à l’entrepôt':'<kbd>E</kbd>Ouvrir la boutique';
@@ -588,6 +593,7 @@ function promptText(){
   if(me.ko)return '';
   for(let s=0;s<SLOTS.length;s++){if(s===myFarm||!pub[s]||!pub[s].o)continue;const d=SLOTS[s].door;if(Math.hypot(P.x-d.x-.5,P.y-d.y-.5)<2.2)return isAlly(s)?`Ferme de votre allié ${pub[s].o}`:pub[s].on?`<kbd>E</kbd>Piller l’entrepôt de ${pub[s].o}`:`Ferme de ${pub[s].o} (hors ligne, protégée)`}
   {const sh=BUILD.find(b=>b.kind==='armurerie');if(sh&&Math.hypot(P.x-(sh.x+sh.w/2),P.y-(sh.y+sh.h+.5))<4.5)return '<kbd>E</kbd>Armurerie : acheter un brouilleur'}
+  if(me.matches>0&&!me.burnCd){const fx2=Math.floor(P.x+P.r[4]*.8),fy2=Math.floor(P.y+P.r[5]*.8),i=idx(fx2,fy2),f=fieldOf[i];if(f>=0&&(f>>2)!==myFarm&&!isAlly(f>>2)&&online(f>>2)&&crop[i]>=0)return '<kbd>I</kbd>Mettre le feu à ce champ ('+me.matches+' allumettes)'}
   if(inTownY(P.y))return 'Village : zone neutre, pas de combat';
   if(me.gun&&me.ammo>0){const g=GUN[me.up.gun];if(nearestHostile(P.x,P.y,g.r))return '<kbd>F</kbd>Tirer (visée automatique) · '+me.ammo+' balles'}else if(nearestHostile(P.x,P.y,1.6))return '<kbd>F</kbd>Coup de poing'+(me.gun?' (plus de balles)':'');
   {const fx2=Math.floor(P.x+P.r[4]*.8),fy2=Math.floor(P.y+P.r[5]*.8),i=idx(fx2,fy2),f=fieldOf[i];if(f>=0&&(f>>2)!==myFarm){const o=f>>2;if(!isAlly(o)&&online(o)&&crop[i]>=0&&grow[i]>=10)return '<kbd>4</kbd> faucille puis <kbd>Espace</kbd> : voler cette récolte'}}
@@ -627,7 +633,30 @@ function drawCrop(px,py,c,g10,t){
     case 'fraise':ctx.fillStyle='#5A3B26';ctx.fillRect(px,py,TS,TS);ctx.fillStyle='#3E8E3A';for(let k=0;k<4;k++){ctx.beginPath();ctx.arc(px+8+(k%2)*16,py+8+((k/2)|0)*16,6.5,0,7);ctx.fill()}ctx.fillStyle='#E0413A';for(let k=0;k<8;k++)ctx.fillRect(px+4+((k*9)%24),py+5+((k*13)%22),3.5,4);break;
   }
 }
-function drawPerson(x,y,dx,dy,walkT,shirt,hat,carrying){
+function drawHeld(px,py,dx,dy,walkT,item,act){
+  if(item==null||item<0)return;
+  const fx2=dx||0,fy2=(dx?0:(dy||1)),side=fx2!==0?fx2:(fy2<0?-1:1);
+  const hx=px+(fx2!==0?fx2*7:side*8),hy=py+2+(fy2<0?-3:0);
+  const sw=act?Math.sin(performance.now()/45)*.9:Math.sin(walkT*12)*.25;
+  ctx.save();ctx.translate(hx,hy);ctx.scale(1.35,1.35);
+  if(item===5){ // fusil : pointé dans la direction regardée
+    const a=fx2!==0?(fx2>0?0:Math.PI):(fy2>0?Math.PI/2:-Math.PI/2);ctx.rotate(a);if(fx2<0)ctx.scale(1,-1);
+    ctx.fillStyle='#6B4A2E';ctx.fillRect(-7,-2,9,4);ctx.fillStyle='#2A2A2A';ctx.fillRect(0,-1.5,17,3);ctx.fillRect(3,1,3,4);ctx.fillRect(9,-3,4,1.5);
+    if(act){ctx.fillStyle='#FFD27A';ctx.beginPath();ctx.arc(19,0,3.2,0,7);ctx.fill()}
+  }else if(item===6){ // poings levés
+    const push=act?6:Math.abs(Math.sin(walkT*6))*1.5,ox=fx2*(3+push),oy=fy2*(3+push);ctx.fillStyle='#F0C9A0';ctx.strokeStyle='#C9A07A';ctx.lineWidth=1;
+    for(const s2 of [-1,1]){const px2=ox+(fy2!==0?s2*4:0),py2=oy+(fx2!==0?s2*3:0)-2;ctx.beginPath();ctx.arc(px2,py2,3.2,0,7);ctx.fill();ctx.stroke()}
+  }else{
+    const base=fx2>0?.5:fx2<0?Math.PI-.5:fy2>0?Math.PI/2+side*.6:-Math.PI/2-side*.4;ctx.rotate(base+sw*(fx2<0?-1:1));
+    if(item===0){ctx.fillStyle='#8E6E3A';ctx.fillRect(0,-1.2,14,2.4);ctx.fillStyle='#B9BEC3';ctx.fillRect(13,-3.5,7,7);ctx.fillStyle='#8A9096';ctx.fillRect(18,-3.5,2,7)}
+    else if(item===1){ctx.fillStyle='#C8A86A';ctx.beginPath();ctx.ellipse(6,0,5.5,4.5,0,0,7);ctx.fill();ctx.fillStyle='#8E6E3A';ctx.fillRect(0,-1.5,3,3);if(act){ctx.fillStyle='#7CC66B';ctx.fillRect(12,-1,2,2);ctx.fillRect(15,2,2,2)}}
+    else if(item===2){ctx.fillStyle='#5C93C4';ctx.fillRect(1,-4,9,8);ctx.strokeStyle='#5C93C4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(9,-2);ctx.lineTo(15,-5);ctx.stroke();ctx.strokeStyle='#9CC5E8';ctx.beginPath();ctx.arc(5,-4,3,Math.PI,0);ctx.stroke();if(act){ctx.fillStyle='#8FD0FF';for(let k=0;k<3;k++)ctx.fillRect(15+k*2,-3+((performance.now()/30+k*5)%9),1.5,2.5)}}
+    else if(item===3){ctx.fillStyle='#8E6E3A';ctx.fillRect(0,-1.2,7,2.4);ctx.strokeStyle='#D0D5DA';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(7,0);ctx.quadraticCurveTo(17,-1,14,-9);ctx.stroke()}
+    else if(item===4){ctx.fillStyle='#E8E8E2';ctx.fillRect(1,-4,9,8);ctx.fillStyle='#4CA45A';ctx.fillRect(4.5,-2.5,2,5);ctx.fillRect(3,-.5,5,1.8)}
+  }
+  ctx.restore();
+}
+function drawPerson(x,y,dx,dy,walkT,shirt,hat,carrying,item,act){
   const px=x*TS,py=y*TS,bob=Math.sin(walkT*12)*1.5;
   ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(px,py+9,8,4,0,0,7);ctx.fill();
   ctx.fillStyle='#2D3B55';ctx.fillRect(px-5,py+2+bob*.3,4,7);ctx.fillRect(px+1,py+2-bob*.3,4,7);
@@ -635,6 +664,7 @@ function drawPerson(x,y,dx,dy,walkT,shirt,hat,carrying){
   if(carrying){ctx.fillStyle='#8A6A3E';ctx.fillRect(px-4,py-2,8,7)}
   ctx.fillStyle='#F0C9A0';ctx.beginPath();ctx.arc(px+dx*2,py-8+dy*1.5,5,0,7);ctx.fill();
   ctx.fillStyle=hat;ctx.beginPath();ctx.ellipse(px+dx*2,py-10+dy,7,3.5,0,0,7);ctx.fill();ctx.fillRect(px-3+dx*2,py-15+dy,6,5);
+  if(item!=null)drawHeld(px,py,dx,dy,walkT,item,act);
 }
 function label(x,y,txt,col='#EEF2E2',bg='rgba(16,24,14,.78)'){if(NOLABEL)return;ctx.font='600 11px "Barlow",sans-serif';ctx.textAlign='center';const w=ctx.measureText(txt).width+10;ctx.fillStyle=bg;ctx.fillRect(x-w/2,y-11,w,15);ctx.fillStyle=col;ctx.fillText(txt,x,y)}
 function drawVeh(v,t){
@@ -658,7 +688,7 @@ function drawVeh(v,t){
   }
   if(r[8]){ctx.fillStyle='#4FC3F7';ctx.beginPath();ctx.arc(-8,0,4,0,7);ctx.fill()}
   ctx.restore();
-  if(r[1]===myFarm)label(v.x*TS,v.y*TS-36,r[11]+(r[9]?' · '+r[9]:''),r[8]?'#8FDCFF':'#EEF2E2');
+  if(r[1]===myFarm)label(v.x*TS,v.y*TS-36,r[11]+(r[9]?' · '+r[9]:''),r[8]?'#8FDCFF':'#EEF2E2');else if(me&&me.veh===r[0])label(v.x*TS,v.y*TS-36,r[11]+' · VOLÉ !','#FF8A7A');
 }
 const THIEF_STYLE={normal:{body:'#2B2E36',scarf:null,s:1},rapide:{body:'#2B2E36',scarf:'#D8392B',s:.9},costaud:{body:'#3A2F2A',scarf:null,s:1.35},saboteur:{body:'#2B2E36',scarf:'#F28C28',s:1},chef:{body:'#1A1A1A',scarf:'#D4A017',s:1.45}};
 function drawThief(t,time){
@@ -828,6 +858,7 @@ function render(t,dt){
   if(P&&me&&!me.veh){const pr=P.r,fx2=Math.floor(P.x+pr[4]*.8),fy2=Math.floor(P.y+pr[5]*.8);if(fx2>=0&&fy2>=0&&fx2<W&&fy2<H&&fieldOf[idx(fx2,fy2)]>=0&&(fieldOf[idx(fx2,fy2)]>>2)===myFarm){ctx.strokeStyle='rgba(240,180,60,.95)';ctx.lineWidth=2;ctx.strokeRect(fx2*TS+1,fy2*TS+1,TS-2,TS-2)}}
   // lampadaires
   for(const fm of pub){if(!fm.lamp||!ACT[fm.s])continue;const sl=SLOTS[fm.s],off=fm.jam;for(const e of sl.entr){ctx.fillStyle='#333';ctx.fillRect(e[0]*TS+14,e[1]*TS+2,4,20);ctx.fillStyle=off?'#555':'#FFE9A8';ctx.beginPath();ctx.arc(e[0]*TS+16,e[1]*TS+2,4,0,7);ctx.fill()}}
+  for(const i of fires){const fx2=(i%W)*TS,fy2=Math.floor(i/W)*TS;ctx.fillStyle='rgba(40,20,10,.35)';ctx.fillRect(fx2,fy2,TS,TS);for(let k=0;k<3;k++){const h=12+Math.sin(t*12+k*2+i)*5,x0=fx2+6+k*10;ctx.fillStyle='#FF6A1A';ctx.beginPath();ctx.moveTo(x0-5,fy2+TS-4);ctx.quadraticCurveTo(x0,fy2+TS-4-h*1.6,x0+5,fy2+TS-4);ctx.fill();ctx.fillStyle='#FFD23C';ctx.beginPath();ctx.moveTo(x0-2.5,fy2+TS-4);ctx.quadraticCurveTo(x0,fy2+TS-4-h,x0+2.5,fy2+TS-4);ctx.fill()}const a=(t*.8+i*.13)%1;ctx.globalAlpha=.5*(1-a);ctx.fillStyle='#777';ctx.beginPath();ctx.arc(fx2+16,fy2+4-a*26,5+a*8,0,7);ctx.fill();ctx.globalAlpha=1}
   for(const b of builds)drawBuild(b,t);
   if(me&&me.traps)for(const tr of me.traps)drawBuild([0,myFarm,'piege',tr[0],tr[1]],t);
   if(chest)drawChest(chest,t);if(cow)drawCow(cow,t);
@@ -847,12 +878,11 @@ function render(t,dt){
   for(const p of ents.pl.values()){const r=p.r;if(r[7])continue;const col=(pub[r[1]]||{}).c||'#2F7AC7';
     if(r[12]){ctx.save();ctx.translate(p.x*TS,p.y*TS);ctx.rotate(1.4);ctx.translate(-p.x*TS,-p.y*TS);drawPerson(p.x,p.y,0,1,0,'#7A7A7A','#555',false);ctx.restore();label(p.x*TS,p.y*TS-23,r[8]+' · K.O.','#FF8A7A');continue}
     if(r[13]&&Math.sin(t*20)>0)ctx.globalAlpha=.45;
-    drawPerson(p.x,p.y,r[4],r[5],r[6]?p.walk:0,r[14]?'#FFFFFF':col,'#C8402F',r[9]);ctx.globalAlpha=1;
+    drawPerson(p.x,p.y,r[4],r[5],r[6]?p.walk:0,r[14]?'#FFFFFF':col,'#C8402F',r[9],r[17],r[18]);ctx.globalAlpha=1;
     if(r[0]!==myId&&!isAlly(r[1])){ctx.strokeStyle='rgba(239,68,68,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x*TS,p.y*TS+9,10,5,0,0,7);ctx.stroke()}
     hpBar(p.x*TS,p.y*TS-38,r[10],r[11]);
     if(r[16]===1){for(let k=0;k<3;k++){const a=t*5+k*2.1;ctx.fillStyle='#FFE27A';ctx.fillRect(p.x*TS+Math.cos(a)*10-2,p.y*TS-30+Math.sin(a)*4-2,4,4)}}else if(r[16]===2){ctx.fillStyle='#7A5A2A';for(let k=0;k<3;k++)ctx.fillRect(p.x*TS-8+k*7,p.y*TS-4+((t*30+k*9)%14),3,4)}
     if(r[15]){ctx.font='600 12px "Barlow",sans-serif';const tw2=Math.min(220,ctx.measureText(r[15]).width+14),bx2=p.x*TS-tw2/2,by2=p.y*TS-70;ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(bx2,by2,tw2,20);ctx.beginPath();ctx.moveTo(p.x*TS-5,by2+20);ctx.lineTo(p.x*TS+5,by2+20);ctx.lineTo(p.x*TS,by2+26);ctx.fill();ctx.fillStyle='#1D1406';ctx.textAlign='center';ctx.fillText(r[15],p.x*TS,by2+14,tw2-8)}
-    if(r[0]===myId){const tg=nearestHostile(p.x,p.y,12);const ang=tg?Math.atan2(tg.y-p.y,tg.x-p.x):Math.atan2(r[5],r[4]||.001);ctx.strokeStyle='#3A2A1A';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x*TS,p.y*TS-2);ctx.lineTo(p.x*TS+Math.cos(ang)*15,p.y*TS-2+Math.sin(ang)*15);ctx.stroke()}
     const pb=pub[r[1]]||{};label(p.x*TS,p.y*TS-23,r[8]+(r[0]===myId?' (vous)':isAlly(r[1])?' · allié':truceC(r[1])?' · trêve '+mmss((me.truces.find(t=>t.f===r[1])||{}).t||0):' · ennemi')+(pb.wanted?' · RECHERCHÉ':'')+(pb.b?' · PRIME '+eur(pb.b):''),r[0]===myId?'#F0B43C':isAlly(r[1])?'#8FE39A':'#FF8A7A')}
   if(me&&me.veh){const v=myVeh();if(v){ctx.fillStyle='#F0B43C';ctx.beginPath();ctx.moveTo(v.x*TS,v.y*TS-50);ctx.lineTo(v.x*TS-7,v.y*TS-60);ctx.lineTo(v.x*TS+7,v.y*TS-60);ctx.fill()}}
   for(const p of parts){ctx.globalAlpha=Math.max(0,Math.min(1,p.life*1.6));ctx.fillStyle=p.c;ctx.fillRect(p.x*TS-2,p.y*TS-2,4,4)}ctx.globalAlpha=1;
@@ -894,6 +924,7 @@ function drawMini(){
   if(nt){c.fillStyle='rgba(6,10,28,.86)';for(let k=0;k<SLOTS.length;k++){if(k===myFarm||!ACT[k])continue;const q=SLOTS[k];c.fillRect(q.x,q.y,36,31)}}
   if(viewAt){c.strokeStyle='#fff';c.lineWidth=1;c.strokeRect(viewAt.x-20,viewAt.y-12,40,24)}
   for(const b of builds){if(!seen(b[3],b[4]))continue;c.fillStyle='#E8DCC0';c.fillRect(b[3],b[4],b[5],b[6])}
+  for(const i of fires){c.fillStyle='#FF4A1A';c.fillRect(i%W,Math.floor(i/W),1,1)}
   if(chest){c.fillStyle='#FFD23C';c.fillRect(chest[0]-2,chest[1]-2,4,4)}if(cow){c.fillStyle='#FFFFFF';c.fillRect(cow[0]-2,cow[1]-2,4,4)}
   const sl=SLOTS[myFarm];c.strokeStyle='#F0B43C';c.lineWidth=1;c.strokeRect(sl.x+.5,sl.y+.5,35,30);
   for(const a of ents.ag.values()){if(!seen(a.x,a.y))continue;c.fillStyle=(pub[a.r[1]]||{}).c||'#fff';c.fillRect(a.x-1,a.y-1,2,2)}
@@ -957,6 +988,7 @@ function buildIcons(){
   mkIcon('farmup',()=>{ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(10,44,40,22);ctx.fillStyle='#E8DCC0';ctx.fillRect(6,40,40,22);ctx.fillStyle='#A9452F';ctx.beginPath();ctx.moveTo(2,42);ctx.lineTo(26,20);ctx.lineTo(50,42);ctx.fill();ctx.fillStyle='#4A3523';ctx.fillRect(21,48,10,14);ctx.fillStyle='#4CAF50';ctx.beginPath();ctx.moveTo(57,4);ctx.lineTo(71,22);ctx.lineTo(62,22);ctx.lineTo(62,42);ctx.lineTo(52,42);ctx.lineTo(52,22);ctx.lineTo(43,22);ctx.closePath();ctx.fill();ctx.strokeStyle='#2E7D32';ctx.lineWidth=1.5;ctx.stroke();ctx.strokeStyle='#F0B43C';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(51,57,6,5,0,0,7);ctx.stroke();ctx.beginPath();ctx.ellipse(63,57,6,5,0,0,7);ctx.stroke()});
   mkIcon('play',()=>{ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(9,15,60,42);ctx.fillStyle='#22301D';ctx.fillRect(5,11,60,42);ctx.strokeStyle='#F0B43C';ctx.lineWidth=3;ctx.strokeRect(5,11,60,42);ctx.fillStyle='#F0B43C';ctx.beginPath();ctx.moveTo(28,22);ctx.lineTo(28,42);ctx.lineTo(46,32);ctx.closePath();ctx.fill();ctx.fillStyle='#6B5B45';ctx.fillRect(29,53,12,7);ctx.fillRect(21,60,28,4)});
   for(const k of Object.keys(BSZ))mkIcon('b_'+k,()=>{const [w,h]=BSZ[k],sc=Math.min(54/(w*TS),50/(h*TS),1.4);ctx.setTransform(sc,0,0,sc,36-w*TS*sc/2,44-h*TS*sc/2);drawBuild([0,-1,k,0,0,w,h],1.3)});
+  mkIcon('fire',()=>{for(const [x,h,c] of [[24,30,'#FF6A1A'],[40,40,'#FF6A1A'],[52,26,'#FF6A1A'],[34,24,'#FFD23C'],[46,22,'#FFD23C']]){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-10,62);ctx.quadraticCurveTo(x,62-h*1.6,x+10,62);ctx.fill()}ctx.fillStyle='#C9A23A';ctx.fillRect(8,62,56,6)});
   mkIcon('p_farine',()=>{ctx.fillStyle='#EFE6D2';ctx.beginPath();ctx.moveTo(18,20);ctx.lineTo(54,20);ctx.lineTo(58,64);ctx.lineTo(14,64);ctx.fill();ctx.fillStyle='#C9B79A';ctx.fillRect(22,12,28,10);ctx.fillStyle='#C9A23A';ctx.font='700 14px sans-serif';ctx.textAlign='center';ctx.fillText('FARINE',36,48)});
   mkIcon('p_huile',()=>{ctx.fillStyle='#F4D03F';ctx.beginPath();ctx.moveTo(26,24);ctx.lineTo(46,24);ctx.lineTo(50,66);ctx.lineTo(22,66);ctx.fill();ctx.fillStyle='#E0B820';ctx.fillRect(31,10,10,16);ctx.fillStyle='#4E9A35';ctx.fillRect(30,6,12,6);ctx.fillStyle='#FFF6C0';ctx.fillRect(30,34,4,22)});
   mkIcon('p_confiture',()=>{ctx.fillStyle='#C0392B';ctx.fillRect(18,26,36,38);ctx.fillStyle='#F0D9A0';ctx.fillRect(16,18,40,10);ctx.fillStyle='#E07A7A';ctx.fillRect(22,30,6,24);ctx.fillStyle='#FFFFFF';ctx.fillRect(24,40,24,12);ctx.fillStyle='#C0392B';ctx.font='700 9px sans-serif';ctx.textAlign='center';ctx.fillText('FRAISE',36,49)});
@@ -972,7 +1004,7 @@ function stepsHTML(){
   const U=[['farmup','Agrandir','niveaux sans limite (boutique)'],['jammer','Brouilleur','coupe les défenses ennemies 60 s'],['rank','Objectif','la ferme la plus riche de la classe']];
   return `<h3 class="sth">Le jour : cultiver</h3>${row(S)}<h3 class="sth">La nuit : protéger sa ferme</h3>${row(N)}<h3 class="sth">Chacun pour soi : la guerre entre élèves</h3>${row(C)}<h3 class="sth">Grandir et gagner</h3>${row(U)}`;
 }
-const FEAT_ICONS=['farm','map','crop_ble','gps','worker','thief_chef','tower3','sniper','police','dog','lamp','gun','pact','wanted','swords','steal','ko','pact','wanted','give','coins','rank','shield','jammer','farmup','shield','map','b_moulin','b_piege','b_ruche','player','play'];
+const FEAT_ICONS=['farm','map','crop_ble','gps','worker','thief_chef','tower3','sniper','police','dog','lamp','gun','pact','wanted','swords','steal','ko','pact','wanted','give','coins','rank','shield','jammer','farmup','shield','map','fire','b_moulin','b_piege','b_ruche','player','play'];
 function renderFeatures(){
   document.getElementById('feat').innerHTML=FEATURES.map((f,i)=>`<li>${ic(FEAT_ICONS[i],46)}<span><b>${f[0]}.</b> ${f[1]}</span></li>`).join('');
   document.getElementById('steps').innerHTML=stepsHTML();
@@ -1002,7 +1034,7 @@ function renderHotbar(){
     const T=[['beche','Bêche'],['graine',CROPS[me.seed].n],['eau','Arrosoir'],['faucille','Faucille'],['engrais','Engrais']];
     h=T.map(([ik,n],k)=>`<div class="slot${me.tool===k?' on':''}" data-a="slot" data-n="${k}"><span class="key">${k+1}</span>${ICONS[ik]}<span class="n">${n}</span>${k===1?`<span class="q">× ${me.seeds[me.seed]}</span>`:k===4?'<span class="q">1,50 €</span>':''}</div>`+(k===1&&me.tool===1?`<div class="seedpick" role="group" aria-label="Choisir la semence">${CK().map(c=>`<button class="sp${me.seed===c?' on':''}${me.seeds[c]>0?'':' none'}" data-a="seedPick" data-k="${c}" title="${CROPS[c].n} (${me.seeds[c]} graines)">${ic('crop_'+c,28)}<span class="q">${me.seeds[c]}</span></button>`).join('')}</div>`:'')).join('');
   }
-  if(!me.veh){const g=me.gun&&me.ammo>0;h+=`<div class="slot wslot${me.gun&&!me.ammo?' empty':''}" title="Touche F : ${g?'tirer (visée automatique)':'coup de poing'}"><span class="key">F</span>${g?ICONS.fusil:ICONS.poing}<span class="n">${g?'Fusil':'Poings'}</span>${me.gun?`<span class="q">× ${me.ammo}</span>`:''}</div>`}
+  if(!me.veh){const g=me.gun&&me.ammo>0;h+=`<div class="slot wslot${me.tool===5?' on':''}${me.gun&&!me.ammo?' empty':''}" data-a="slot" data-n="5" title="Touche 6 : prendre l’arme en main (les autres la voient). F : ${g?'tirer':'coup de poing'}"><span class="key">6 · F</span>${g?ICONS.fusil:ICONS.poing}<span class="n">${g?'Fusil':'Poings'}</span>${me.gun?`<span class="q">× ${me.ammo}</span>`:''}</div>`}
   $('#hotbar').innerHTML=h;
 }
 const WXN={soleil:'Ensoleillé',nuages:'Nuageux',pluie:'Pluie',orage:'Orage'};
@@ -1016,6 +1048,7 @@ function hudUpdate(){
   {const left=prepNow(),b=$('#prepb');b.hidden=!(left>0)||inLobby;if(left>0){b.classList.toggle('end',left<=30);b.innerHTML=`${ic('shield',26)}<span>${left<=30?'Ouverture des frontières dans':'Préparation'}<span class="long">${left<=30?'':' : personne ne peut sortir de sa ferme'}</span></span><b>${mmss(left)}</b>`}}
   if(joined&&!inLobby&&lastSnapAt&&performance.now()-lastSnapAt>4000){const st=$('#status');st.hidden=false;st.textContent='Le serveur ne répond plus… vérifiez qu’il est lancé, puis Ctrl+F5'}else if($('#status').textContent.startsWith('Le serveur ne répond'))$('#status').hidden=true;
   if(viewAt&&isNightC()){setView(null);toast('La nuit tombe : retour sur votre ferme','b')}else if(viewAt&&(joy.x||joy.y||me.veh))setView(null);else if(viewAt)viewBanner();
+  if(me.revenge)$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k"><span class="lbl">Vengeance · ${escH(me.revenge.o)}</span><span class="v" style="color:#FF8A7A">+50 % · ${mmss(me.revenge.t)}</span></div>`);
   for(const tr of (me.truces||[]))$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k trucehud"><span class="lbl">Trêve · ${escH(tr.o)}</span><span class="v">${mmss(tr.t)}</span></div>`);
   renderQuests();
   if(me.jammed||me.jamSoon)$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k jamhud"><span class="lbl">Défenses</span><span class="v">${me.jammed?'Brouillées':'Brouillage dans 10 s'}</span></div>`);
@@ -1068,6 +1101,7 @@ function pDef(){
   const sh=BUILD.find(b=>b.kind==='armurerie'),Pm=myPlayer(),near=!!(sh&&Pm&&Math.hypot(Pm.x-(sh.x+sh.w/2),Pm.y-(sh.y+sh.h+.5))<4.5);
   const tg=pub.filter(f=>f.o&&f.act!==0&&f.s!==myFarm&&f.on&&!isAlly(f.s));if(!tg.some(f=>f.s===jamSel))jamSel=tg.length?tg[0].s:-1;
   const jamTxt=!near?'Allez à l’armurerie du village':!me.jamReady?'Déjà utilisé aujourd’hui':!tg.length?'Aucun ennemi en ligne':`Lancer le brouilleur · ${eur(PRICES.jam)}`;
+  const mc=card('fire','Allumettes',`<span class="small muted">Touche <b>I</b> face à une culture ennemie : le feu se propage et détruit ses récoltes en quelques secondes. Il s’éteint à l’arrosoir, sous la pluie, ou tout seul chez ceux qui ont un château d’eau. 1 incendie par minute.</span><div class="kv"><span>Allumettes</span><span>${me.matches||0} / 9</span></div><button class="btn pri" data-a="matches" ${(me.matches||0)>=9?'disabled':can(PRICES.matches)}>+3 allumettes · ${eur(PRICES.matches)}</button>`);
   const jc=card('jammer','Brouilleur',`<span class="small muted">Coupe pendant <b>60 s</b> les tours, caméras et lampadaires d’un élève ennemi en ligne : idéal juste avant une attaque. Il est prévenu 10 s avant. Un par jour de jeu, à acheter <b>à l’armurerie</b> du village.</span>${tg.length?`<select data-ch="jam" aria-label="Ferme à brouiller">${tg.map(f=>`<option value="${f.s}"${f.s===jamSel?' selected':''}>${f.o}${f.jam?' (déjà brouillé)':''}</option>`).join('')}</select>`:''}<button class="btn pri" data-a="jam" ${near&&me.jamReady&&tg.length?can(PRICES.jam):'disabled'}>${jamTxt}</button>`);
   return `${me.jammed?'<section class="intro" style="border-color:#7B4FB0">'+ic('jammer',48)+'<p><b>Votre ferme est brouillée !</b> Tours, caméras et lampadaires coupés pendant 60 s. Défendez-vous au fusil (F).</p></section>':''}<section class="intro">${ic('moon',48)}<p>Chaque nuit (21 h – 5 h), des voleurs entrent par les <b>4 entrées</b> de votre ferme, de plus en plus nombreux. Les tours et snipers s’installent <b>là où vous vous tenez</b> : marchez jusqu’à une entrée, puis achetez. Vos défenses tirent aussi sur <b>les élèves ennemis</b> qui entrent sur votre ferme (pas sur vos alliés).</p></section>
   <section><h3>Vos ennemis</h3><div class="steps">${enemies}</div></section>
@@ -1084,7 +1118,8 @@ function pDef(){
    ${lvlCard('elec','elec','Clôture électrique','Ralentit les voleurs ; niveau 2 : ils sont électrocutés.',PRICES.elec)}
    ${card('camera','Caméras',`<span class="small muted">Alerte à chaque intrusion, avec l’entrée utilisée.</span>${me.up.camera?'<span class="lbl">Installées</span>':`<button class="btn pri" data-a="camera" ${can(PRICES.camera)}>Installer · ${eur(PRICES.camera)}</button>`}`)}
   </div></section>
-  <section><h3>Attaque</h3><div class="cards">${jc}</div></section>
+  <section><h3>Attaque</h3><div class="cards">${jc}${mc}${card('tracteur','Voler un véhicule',`<span class="small muted">Approchez-vous d’un tracteur ou d’une moissonneuse ennemi garé et appuyez sur <b>E</b> : crochetage de 4 s sans bouger (12 s s’il a un antivol). Ramenez-le devant votre ferme puis <b>E</b> : le ferrailleur vous paie 15 % de sa valeur (payés par la victime) et vous gardez sa récolte. Mis K.O. en route, vous le perdez.</span>`)}</div></section>
+  <section><h3>Protection</h3><div class="cards">${lvlCard('antivol','gps','Antivol des véhicules','Crochetage de vos tracteurs et moissonneuses en 12 s au lieu de 4 s : le temps de réagir !')}</div></section>
   ${tw?`<section><h3>Vos tours</h3><div class="cards">${tw}</div></section>`:''}
   ${gl?`<section><h3>Vos gardes</h3><div class="cards">${gl}</div></section>`:''}
   <section><h3>Bilan</h3><div class="row small"><span>Voleurs neutralisés : <b>${me.stats.caught}</b></span><span>· Récolte volée : <b>${nf0.format(me.stats.stolen)} kg</b></span><span>· Nuits défendues : <b>${me.stats.nights}</b></span></div></section>`;
@@ -1134,7 +1169,7 @@ function pRank(){
   return `<section><h3>Classement de la classe</h3><div class="tsc"><table><thead><tr><th>#</th><th>Fermier</th><th style="text-align:right">Patrimoine</th><th style="text-align:right">K.O. donnés</th><th style="text-align:right">K.O. subis</th><th style="text-align:right">Kg pillés</th><th style="text-align:right">Voleurs</th><th style="text-align:right">Prime</th><th>Statut</th></tr></thead><tbody>${list.map((f,i)=>`<tr${f.s===myFarm?' style="background:#22301d"':''}><td>${i+1}</td><td><i class="sw" style="background:${f.c}"></i>${f.o} <span class="muted small">niv. ${f.lvl||0}</span>${f.s===myFarm?' (vous)':isAlly(f.s)?' · allié':''}${f.wanted?' <b class="dn">RECHERCHÉ</b>':''}</td><td class="n">${eur(f.w)}</td><td class="n">${f.kl}</td><td class="n">${f.dt}</td><td class="n">${nf0.format(f.pil)}</td><td class="n">${f.k}</td><td class="n">${f.b?'<b style="color:var(--accent)">'+eur(f.b)+'</b>':'—'}</td><td>${f.on?'<span class="up">En ligne</span>':'<span class="muted">Hors ligne</span>'}</td></tr>`).join('')}</tbody></table></div><p class="small muted">Nuit actuelle : ${world.n}.</p></section>${bounty}${diplo}`;
 }
 function pHelp(){
-  const K=[['player','ZQSD / flèches','Se déplacer et conduire. En véhicule, la flèche donne la direction ; la flèche opposée fait reculer (ou X).'],['till','Espace','À pied : utiliser l’outil sur la case encadrée en jaune (maintenir pour enchaîner). En véhicule : abaisser / relever l’outil.'],['farm','E','Monter / descendre d’un véhicule, décharger devant votre ferme, sinon ouvrir la boutique.'],['seeds','1 à 5 · R','Outils : bêche, graines, arrosoir, faucille, engrais. R change de graine. En tracteur : 1 charrue, 2 semoir, 3 pulvérisateur.'],['b_moulin','C','Bâtiments : construire moulin, serre, ruches, pièges… juste au-dessus de vous, dans votre ferme.'],['player','V','Lancer une moquerie au-dessus de votre tête (les autres la voient).'],['gun','F','Tirer sur la cible la plus proche : voleur, élève ennemi, ses gardes ou ses tours (visée automatique). Pas de combat au village.'],['steal','Faucille · E','Chez un ennemi : faucille (4) + Espace pour voler ses récoltes mûres, E devant sa ferme pour piller son entrepôt.'],['pact','L','Classement et diplomatie : proposer, accepter ou rompre un pacte d’amitié.'],['whip','T','Coup de fouet à un ouvrier proche.'],['chat','Entrée','Écrire dans le chat de la classe.'],['rank','B · P · G · M · L','Boutique, Défense, Équipe, Marché, Classement et pactes.']];
+  const K=[['player','ZQSD / flèches','Se déplacer et conduire. En véhicule, la flèche donne la direction ; la flèche opposée fait reculer (ou X).'],['till','Espace','À pied : utiliser l’outil sur la case encadrée en jaune (maintenir pour enchaîner). En véhicule : abaisser / relever l’outil.'],['farm','E','Monter / descendre d’un véhicule, décharger devant votre ferme, sinon ouvrir la boutique.'],['seeds','1 à 5 · R','Outils : bêche, graines, arrosoir, faucille, engrais. R change de graine. En tracteur : 1 charrue, 2 semoir, 3 pulvérisateur.'],['b_moulin','C','Bâtiments : construire moulin, serre, ruches, pièges… juste au-dessus de vous, dans votre ferme.'],['player','V','Lancer une moquerie au-dessus de votre tête (les autres la voient).'],['fire','I','Mettre le feu à la culture ennemie en face de vous (allumettes, onglet Défense).'],['gun','F','Tirer sur la cible la plus proche : voleur, élève ennemi, ses gardes ou ses tours (visée automatique). Pas de combat au village.'],['steal','Faucille · E','Chez un ennemi : faucille (4) + Espace pour voler ses récoltes mûres, E devant sa ferme pour piller son entrepôt.'],['pact','L','Classement et diplomatie : proposer, accepter ou rompre un pacte d’amitié.'],['whip','T','Coup de fouet à un ouvrier proche.'],['chat','Entrée','Écrire dans le chat de la classe.'],['rank','B · P · G · M · L','Boutique, Défense, Équipe, Marché, Classement et pactes.']];
   const acc=card('shield','Mon compte · '+myName,`<span class="small muted">Votre mot de passe protège votre ferme quand vous n’êtes pas là.</span><input type="password" id="pwOld" placeholder="Ancien mot de passe" autocomplete="current-password" aria-label="Ancien mot de passe"><input type="password" id="pwNew" placeholder="Nouveau (4 caractères min.)" autocomplete="new-password" aria-label="Nouveau mot de passe"><button class="btn pri" data-a="setPwBtn">Changer le mot de passe</button><div class="row"><button class="btn" data-a="logoutBtn">Se déconnecter</button><button class="btn red" data-a="logoutBtn" data-all="1">Déconnecter tous les ordinateurs</button></div>`);
   return `<section><h3>Mon compte</h3><div class="cards">${acc}</div></section><section class="intro">${ic('play',48)}<p>Besoin d’un rappel ? <button class="btn pri" data-a="video">▶ Revoir la vidéo explicative</button> <button class="btn" data-a="admOpen">⚙ Menu admin</button></p></section><section><h3>Commandes</h3><div class="cards">${K.map(([i,k,d])=>card(i,`<kbd>${k}</kbd>`,`<span class="small">${d}</span>`)).join('')}</div></section><section>${stepsHTML()}</section>
   <section><h3>Fonctionnalités</h3><ul class="feat">${FEATURES.map((f,i)=>`<li>${ic(FEAT_ICONS[i],46)}<span><b>${f[0]}.</b> ${f[1]}</span></li>`).join('')}</ul></section>`;
@@ -1368,7 +1403,7 @@ const VID=(()=>{
     if(t>=p2+.5&&t<p3)txt('Allié : impossible d’attaquer',B[0]*64,4.7*64+64,22,'#BFF0A8',undefined,600,'"Barlow"');
     if(t>=p3){ctx.globalAlpha=ease((t-p3)/.5);panel(180,40,600,64);txt('Classe : Élève 2 a rompu son pacte avec Élève 5 !',480,72,24,'#FFB4A8',undefined,600,'"Barlow"');ctx.globalAlpha=1;tag(A[0],'Vous',false);}
    }},
-  {n:'Le brouilleur',cap:'Pour préparer une attaque, achetez un brouilleur à l’armurerie du village : 3 000 €, un seul par jour. Dix secondes plus tard, les tours, caméras et lampadaires de l’ennemi sont coupés pendant 60 secondes. Mais lui aussi est prévenu !',
+  {n:'Le brouilleur',cap:'Pour préparer une attaque, achetez un brouilleur à l’armurerie du village, un seul par jour. Dix secondes plus tard, les tours, caméras et lampadaires de l’ennemi sont coupés pendant 60 secondes. Mais lui aussi est prévenu !',
    draw(t,D){
     Wz(48);grass(0,0,21,12);for(let x=0;x<21;x++)pathT(x,5);for(let y=0;y<12;y++)if(y!==5)drawHedge(11,y);
     house(1,1,4,3,'#3A3A3A','ARMURERIE');house(15,0.6,4,3,'#C8402F','FERME ENNEMIE');
@@ -1381,7 +1416,7 @@ const VID=(()=>{
     S();
     night(.38,jam?[[a1[0]*48,a1[1]*48,90]]:[[11.5*48,4*48,110],[11.5*48,6*48,110],[T[0][0]*48,T[0][1]*48,150],[T[1][0]*48,T[1][1]*48,150],[a1[0]*48,a1[1]*48,90]]);
     if(t<tj-1.4){key('P',a1[0]*48-26,a1[1]*48-64,30);badge('Brouilleur',a1[0]*48+40,a1[1]*48-64,17,'#7B4FB0','#fff')}
-    float('– 3 000 €',a1[0]*48,a1[1]*48-40,t-1.2,'#FF8A7A',26);
+    float('– 4 500 €',a1[0]*48,a1[1]*48-40,t-1.2,'#FF8A7A',26);
     if(t>1.6&&t<tj){const u=clamp01((t-1.6)/(tj-1.6)),x=lerp(a1[0]*48,13.5*48,u),y=lerp(a1[1]*48-20,5.5*48,u)-Math.sin(u*Math.PI)*120;icon('jammer',x,y,58);badge('Effet dans '+Math.max(1,Math.ceil(10*(1-u)))+' s',x,y-46,16,'#14213D','#D6C8FF')}
     if(t>2.2){ctx.globalAlpha=ease((t-2.2)/.4);panel(560,18,384,58);txt('Ennemi : « un brouilleur arrive dans 10 s ! »',752,47,19,'#FFB4A8',undefined,600,'"Barlow"');ctx.globalAlpha=1}
     if(jam){for(const [x,y] of T)badge('BROUILLÉ',x*48,y*48-64,16,'#5B4A9A','#fff');const left=Math.max(0,60-Math.floor((t-tj)/(D-tj)*60));badge('Défenses coupées : '+left+' s',16.5*48,11*48-20,20,'#7B4FB0','#fff')}

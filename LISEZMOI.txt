@@ -136,6 +136,7 @@ ZQSD (ou flèches)  se déplacer / conduire
 Espace             utiliser l'outil (à pied) / abaisser l'outil (véhicule)
 E                  monter/descendre, décharger devant sa ferme, sinon ouvre la boutique (partout)
 1 à 5              outils (bêche, semences, arrosoir, faucille, engrais)
+6                  prendre l'arme en main (fusil ou poings) : les autres la voient
 R                  changer de semence
 F                  tirer (fusil à acheter, balles limitées) ou coup de poing sans arme
 Molette / clic     choisir la semence (blé, maïs, fraise…) quand la graine (2) est en main
@@ -145,6 +146,7 @@ Entrée             chat de la classe
 B P G M L          Boutique, Défense, Équipe, Marché, Classement et pactes
 C                  Bâtiments (construire juste au-dessus de vous)
 V                  Lancer une moquerie
+I                  Mettre le feu à la culture ennemie en face (allumettes)
 
 
 6. CHACUN POUR SOI
@@ -166,6 +168,27 @@ V                  Lancer une moquerie
 - Après un K.O., TRÊVE de 5 min entre les deux joueurs : ils ne peuvent
   plus se battre ni entrer dans la ferme de l'autre (compte à rebours
   en haut à gauche). Le vainqueur est raccompagné chez lui.
+- GUERRE ENTRE ÉLÈVES :
+  · Fusil et poings font 2 fois plus de dégâts aux élèves.
+  · K.O. : rançon de 8 % de l'argent de la victime (max 1 200 €) et la
+    moitié de son sac.
+  · Vol de véhicule : E près d'un tracteur/moissonneuse ennemi garé,
+    4 s de crochetage sans bouger (12 s avec l'antivol). Ramenez-le
+    devant VOTRE ferme + E : le ferrailleur vous paie 15 % de sa valeur
+    (payés par la victime) et vous gardez la récolte de la trémie.
+    Le véhicule rentre ensuite à son garage. Mis K.O. en route = perdu.
+    Abandonné = il rentre tout seul au garage au bout d'1 minute.
+  · Incendie : allumettes (onglet Défense, 300 € les 3), touche I face
+    à une culture ennemie. Le feu se propage puis détruit les cultures.
+    Il s'éteint à l'arrosoir (outil 3), sous la pluie, ou tout seul chez
+    ceux qui ont un château d'eau. 1 incendie par minute.
+- ÉQUILIBRAGE :
+  · Attaquer, voler ou brûler un élève qui vaut moins de 40 % de votre
+    patrimoine ne rapporte rien (et vol/incendie sont refusés).
+  · Vengeance : mettre K.O. celui qui vous a mis K.O. (dans les 15 min)
+    rapporte 50 % de rançon en plus.
+  · Trêve de 5 min après chaque K.O., joueurs hors ligne protégés,
+    antivol, tours blindées, pièges, abeilles, canon à purin.
 - PRIMES : onglet Classement > "Mettre une prime" sur un rival (min.
   200 €). Celui qui le met K.O. encaisse tout. Chaque matin, la
   coopérative met 400 € sur la ferme la plus riche.
@@ -247,3 +270,22 @@ Le jeu peut sauvegarder en continu sur GitHub (gratuit) :
 Les logs affichent « ☁ Sauvegarde en ligne ». Le jeu enregistre toutes
 les 45 s et juste avant chaque arrêt du serveur, puis tout est récupéré
 au démarrage suivant (parties, joueurs, mots de passe, exclus).
+
+
+11. NOUVEAUTÉS : FERME AU CENTRE, OBJET EN MAIN, ÉCONOMIE PLUS DURE
+------------------------------------------------------------------
+- La ferme est maintenant au centre de chaque terrain, sur une place
+  (tracteurs garés autour). Les 4 champs sont dans les coins et l'herbe
+  autour sert à construire vos bâtiments. Les anciennes sauvegardes
+  sont converties automatiquement : champs replantés, bâtiments qui ne
+  rentrent plus remboursés à 100 %.
+- Chaque élève tient dans ses mains l'outil choisi (bêche, graines,
+  arrosoir, faucille, engrais) ou son arme (fusil / poings, touche 6),
+  avec une animation quand il travaille, tire ou frappe. Tout le monde
+  voit donc qui est armé.
+- Économie plus difficile : tous les achats coûtent 1,5 fois plus cher
+  (machines, défenses, bâtiments, terres, améliorations, balles…),
+  les récoltes et produits se vendent environ 15 % moins cher, les
+  graines coûtent 25 % de plus, les salaires sont plus élevés et
+  agrandir la ferme démarre à 7 500 €. Réglable en haut de server.js
+  (COST_MULT et SELL_MULT).
