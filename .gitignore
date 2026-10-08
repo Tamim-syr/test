@@ -2,3 +2,4 @@ sauvegarde.json
 sauvegarde.json.tmp
 parties/
 exclus.json
+node_modules/

@@ -143,6 +143,8 @@ T                  coup de fouet à un ouvrier
 X                  marche arrière
 Entrée             chat de la classe
 B P G M L          Boutique, Défense, Équipe, Marché, Classement et pactes
+C                  Bâtiments (construire juste au-dessus de vous)
+V                  Lancer une moquerie
 
 
 6. CHACUN POUR SOI
@@ -208,3 +210,40 @@ B P G M L          Boutique, Défense, Équipe, Marché, Classement et pactes
 - Brouilleur, ferme améliorable sans fin, vidéo explicative à l'ouverture
 - Protection hors ligne : pas de voleurs quand on est déconnecté,
   les machines GPS et les ouvriers continuent de travailler
+
+9. BÂTIMENTS, PRODUITS, QUÊTES ET ÉVÉNEMENTS
+--------------------------------------------
+Touche C (onglet Bâtiments). Placez-vous sur l'herbe de votre ferme :
+le bâtiment se construit juste au-dessus de vous.
+- Moulin (blé → farine), Pressoir (colza/tournesol → huile),
+  Confiturerie (fraises → confiture), Poulailler (œufs, mange du maïs),
+  Ruches (miel, +5 % de récolte, les abeilles piquent les intrus).
+  La production est automatique, même déconnecté. Vente : onglet Marché.
+- Château d'eau (arrose tout), Serre (+30 % de vitesse de pousse),
+  Infirmerie (soins, retour de K.O. en 3 s), Statue (+10 % sur les ventes).
+- Contre-attaques : Piège à loup (invisible, bloque 4 s), Épouvantail
+  (fait fuir les voleurs), Canon à purin (ralentit les élèves ennemis).
+- Tours plus fortes : plus de portée que le fusil, blindées (moitié
+  des dégâts) et elles ripostent contre ceux qui les attaquent de loin.
+- 3 quêtes du jour récompensées (en haut à droite).
+- Événements : vache échappée (E pour l'attraper, 250 €), coffre au
+  trésor (point doré sur la mini-carte), food-truck (+60 % sur un produit).
+
+
+10. HÉBERGEMENT EN LIGNE (RENDER) ET SAUVEGARDE CONTINUE
+--------------------------------------------------------
+Sur Render (offre gratuite), le disque est effacé à chaque redémarrage.
+Le jeu peut sauvegarder en continu sur GitHub (gratuit) :
+1. github.com > Settings > Developer settings > Personal access tokens
+   > Tokens (classic) > Generate new token : cochez seulement « gist »,
+   expiration « No expiration ». Copiez le jeton (ghp_…).
+2. gist.github.com : créez un gist SECRET avec un fichier
+   lisezmoi.txt (n'importe quel texte). L'identifiant du gist est la
+   fin de son adresse : gist.github.com/VOTRE_NOM/ ⟶ 8f3a…c21
+3. Render > votre service > Environment > Add Environment Variable :
+     GITHUB_TOKEN = le jeton
+     GIST_ID      = l'identifiant du gist
+   Enregistrez : le service redémarre.
+Les logs affichent « ☁ Sauvegarde en ligne ». Le jeu enregistre toutes
+les 45 s et juste avant chaque arrêt du serveur, puis tout est récupéré
+au démarrage suivant (parties, joueurs, mots de passe, exclus).

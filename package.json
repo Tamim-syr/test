@@ -1,0 +1,13 @@
+{
+  "name": "terres-vives",
+  "version": "1.0.0",
+  "description": "Jeu de ferme multijoueur Terres Vives",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
