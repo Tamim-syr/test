@@ -10,7 +10,7 @@ const SAVE = path.join(__dirname, 'sauvegarde.json');
 // Durées réelles (en minutes) : modifiez-les librement
 const DUREE_JOUR_MIN = 8;   // de 5 h à 21 h
 const DUREE_NUIT_MIN = 3;   // de 21 h à 5 h
-const VERSION = '2026-10-08-centre1'; // doit être identique dans client.html
+const VERSION = '2026-10-08-centre2'; // doit être identique dans client.html
 const PREPARATION_MIN = 10; // au lancement : personne ne peut sortir de sa ferme pendant ce temps
 const DAY_REAL = DUREE_JOUR_MIN * 60, NIGHT_REAL = DUREE_NUIT_MIN * 60;
 const DAY = 180;            // référence de pousse des cultures (s réelles par « jour » de croissance)

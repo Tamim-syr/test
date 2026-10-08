@@ -144,6 +144,7 @@ T                  coup de fouet à un ouvrier
 X                  marche arrière
 Entrée             chat de la classe
 B P G M L          Boutique, Défense, Équipe, Marché, Classement et pactes
+Tab (maintenir)    Afficher le classement, il disparaît dès qu'on relâche
 C                  Bâtiments (construire juste au-dessus de vous)
 V                  Lancer une moquerie
 I                  Mettre le feu à la culture ennemie en face (allumettes)

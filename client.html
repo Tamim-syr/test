@@ -203,6 +203,15 @@ td.n{font-family:var(--f-m);text-align:right}
 .quests .rw{color:var(--accent);font-family:var(--f-m);font-size:11px}
 .quests.min .q{display:none}
 @media (max-width:760px){.quests{display:none}}
+.board{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:6;width:min(760px,calc(100% - 24px));padding:12px 14px;pointer-events:none}
+.board h3{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-d);font-size:22px;text-transform:uppercase;letter-spacing:.04em}
+.board table{width:100%;border-collapse:collapse;font-size:14px}
+.board th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.board th:nth-child(-n+2){text-align:left}
+.board td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.06);text-align:right;font-family:var(--f-m);font-size:13px}
+.board td:nth-child(-n+2){text-align:left;font-family:var(--f-b);font-size:14px}
+.board tr.me td{background:rgba(240,180,60,.12)}
+.board .tag{font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px;font-family:var(--f-b)}
 .jamhud .v{color:#C4B2FF!important}
 @media (max-width:640px){.vcap{font-size:15px}.vbar button span{display:none}.vplay{font-size:20px}}
 @media (max-width:640px){.hud-tl{max-width:calc(100% - 150px);gap:10px}.hud-tl .v{font-size:14px}#mini{width:140px;height:69px}.slot{width:52px;height:56px}.hud-bl{min-width:150px}.start h1{font-size:34px}}
@@ -220,6 +229,7 @@ td.n{font-family:var(--f-m);text-align:right}
   <div class="hotbar glass" id="hotbar"></div>
   <div class="prompt glass" id="prompt" hidden></div>
   <div class="prepb glass" id="prepb" hidden role="status"></div>
+  <div class="board glass" id="board" hidden aria-live="off"></div>
   <div class="prepb viewb glass" id="viewb" hidden role="status"></div>
   <div class="toasts" id="toasts"></div>
   <div class="chat" id="chat"></div>
@@ -313,8 +323,9 @@ const FEATURES=[
 
 
 /* ======================= État client ======================= */
-const CLIENT_VERSION='2026-10-08-centre1';
+const CLIENT_VERSION='2026-10-08-centre2';
 function showErr(msg){const st=$('#status');st.hidden=false;st.style.borderColor='#B0382B';st.innerHTML=msg;clearTimeout(showErr.t);if(!showErr.sticky)showErr.t=setTimeout(()=>{st.hidden=true;st.style.borderColor=''},8000)}
+window.addEventListener('blur',()=>showBoard(false));
 window.addEventListener('error',e=>{if(joined)showErr('Erreur dans la page : '+String(e.message||e).slice(0,160)+'<br><span class="small muted">Faites Ctrl+F5. Si ça continue, remplacez server.js ET client.html puis redémarrez le serveur.</span>')});
 const TS=32;
 let W=0,H=0,G=null,FIELDS=[],SLOTS=[],BUILD=[],CROPS={},PRICES={},WAGE={},LIMIT={},TOWER={},GUN=[],TT={};
@@ -427,6 +438,7 @@ gameEl.addEventListener('keydown',e=>{
   if(viewAt&&(e.code==='Escape'||['KeyW','KeyA','KeyS','KeyD','KeyZ','KeyQ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))){setView(null);if(e.code==='Escape')return}
   const k=e.code,ch=(e.key||'').toLowerCase();keys[k]=true;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(k))e.preventDefault();
+  if(k==='Tab'){showBoard(true);return}
   if(e.repeat)return;
   if(k==='Enter'){e.preventDefault();openChat();return}
   if(k==='KeyE')act({a:'interact'});
@@ -439,7 +451,7 @@ gameEl.addEventListener('keydown',e=>{
   if(ch==='b')openPanel('boutique');if(ch==='p')openPanel('defense');if(ch==='g')openPanel('equipe');if(ch==='m')openPanel('marche');if(ch==='l')openPanel('classement');if(ch==='h')openPanel('aide');
   sendInput(true);
 });
-gameEl.addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space')useHeld=false;if(e.code==='KeyF')fireHeld=false;sendInput(true)});
+gameEl.addEventListener('keyup',e=>{if(e.code==='Tab')showBoard(false);keys[e.code]=false;if(e.code==='Space')useHeld=false;if(e.code==='KeyF')fireHeld=false;sendInput(true)});
 gameEl.addEventListener('blur',()=>{if(chatOpen)return;for(const k in keys)keys[k]=false;useHeld=false;fireHeld=false;sendInput(true)});
 gameEl.addEventListener('wheel',e=>{if(!joined||!me||panel||me.veh||me.tool!==1||e.target.closest('.ov,.adm,.vintro,.lobby,.start'))return;e.preventDefault();act({a:'seed',dir:e.deltaY>0?1:-1})},{passive:false});
 gameEl.addEventListener('pointerdown',e=>{if(!e.target.closest('select,input,.ov,.start,.vintro,.lobby,.adm'))gameEl.focus({preventScroll:true})});
@@ -1038,6 +1050,15 @@ function renderHotbar(){
   $('#hotbar').innerHTML=h;
 }
 const WXN={soleil:'Ensoleillé',nuages:'Nuageux',pluie:'Pluie',orage:'Orage'};
+function renderBoard(){
+  const el=$('#board');if(el.hidden||!me)return;
+  const list=pub.filter(f=>f.o&&f.act!==0).sort((a,b)=>b.w-a.w);
+  const rel=f=>f.s===myFarm?'<span class="tag" style="background:#F0B43C;color:#1D1406">VOUS</span>':isAlly(f.s)?'<span class="tag" style="background:#2E6B2A">ALLIÉ</span>':truceC(f.s)?'<span class="tag" style="background:#1F5A7A">TRÊVE</span>':'<span class="tag" style="background:#8E2B22">ENNEMI</span>';
+  const rows=list.map((f,i)=>`<tr class="${f.s===myFarm?'me':''}"><td>${i+1}</td><td><i class="sw" style="background:${f.c}"></i>${escH(f.o)}${rel(f)}${f.wanted?'<span class="tag" style="background:#B0382B">RECHERCHÉ</span>':''}</td><td>${f.lvl||0}</td><td>${eur(f.w)}</td><td>${f.kl}</td><td>${f.dt}</td><td>${f.b?eur(f.b):'—'}</td><td style="color:${f.on?'var(--good)':'var(--muted)'}">${f.on?'en ligne':'absent'}</td></tr>`).join('');
+  const h=`<h3><span>Classement</span><span class="small muted" style="font-family:var(--f-b);text-transform:none;letter-spacing:0">Jour ${world.d} · relâchez Tab pour fermer</span></h3><table><thead><tr><th>#</th><th>Fermier</th><th>Niv.</th><th>Patrimoine</th><th>K.O.</th><th>Subis</th><th>Prime</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>`;
+  if(el._h!==h){el._h=h;el.innerHTML=h}
+}
+function showBoard(on){const el=$('#board');if(!el)return;if(on&&(!joined||inLobby||panel||!me))return;el.hidden=!on;if(on)renderBoard()}
 function renderQuests(force){const el=$('#quests');if(!el||!me)return;const Q=me.quests||[];
   const h=`<div class="qh"><span class="lbl">Quêtes du jour</span><button class="btn" data-a="qToggle" style="padding:1px 6px;font-size:11px">${questsMin?'Afficher':'Masquer'}</button></div>`+Q.map(q=>`<div class="q${q.done?' done':''}"><span>${q.done?'✔ ':''}<b>${escH(q.t)}</b></span><div class="qbar"><i style="width:${Math.min(100,q.d/q.n*100)}%"></i></div><span class="row" style="justify-content:space-between"><span class="small muted">${nf0.format(q.d)} / ${nf0.format(q.n)}</span><span class="rw">+${eur(q.r)}</span></span></div>`).join('');
   el.classList.toggle('min',questsMin);if(force||el._h!==h){el._h=h;el.innerHTML=h}}
@@ -1050,7 +1071,7 @@ function hudUpdate(){
   if(viewAt&&isNightC()){setView(null);toast('La nuit tombe : retour sur votre ferme','b')}else if(viewAt&&(joy.x||joy.y||me.veh))setView(null);else if(viewAt)viewBanner();
   if(me.revenge)$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k"><span class="lbl">Vengeance · ${escH(me.revenge.o)}</span><span class="v" style="color:#FF8A7A">+50 % · ${mmss(me.revenge.t)}</span></div>`);
   for(const tr of (me.truces||[]))$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k trucehud"><span class="lbl">Trêve · ${escH(tr.o)}</span><span class="v">${mmss(tr.t)}</span></div>`);
-  renderQuests();
+  renderQuests();renderBoard();
   if(me.jammed||me.jamSoon)$('#hudtl').insertAdjacentHTML('beforeend',`<div class="k jamhud"><span class="lbl">Défenses</span><span class="v">${me.jammed?'Brouillées':'Brouillage dans 10 s'}</span></div>`);
   let bl='';
   if(me.veh){const v=myVeh();if(v){bl=`<span class="lbl">${v.r[11]}</span><span class="num">${nf0.format(Math.abs(v.r[12])*4)} km/h · outil ${v.r[7]?'abaissé':'relevé'}</span>`;if(v.r[2]==='moiss')bl+=`<span class="small">Trémie ${Math.round(v.r[10]*100)} %</span><div class="bar"><i style="width:${v.r[10]*100}%"></i></div>`}}
@@ -1169,7 +1190,7 @@ function pRank(){
   return `<section><h3>Classement de la classe</h3><div class="tsc"><table><thead><tr><th>#</th><th>Fermier</th><th style="text-align:right">Patrimoine</th><th style="text-align:right">K.O. donnés</th><th style="text-align:right">K.O. subis</th><th style="text-align:right">Kg pillés</th><th style="text-align:right">Voleurs</th><th style="text-align:right">Prime</th><th>Statut</th></tr></thead><tbody>${list.map((f,i)=>`<tr${f.s===myFarm?' style="background:#22301d"':''}><td>${i+1}</td><td><i class="sw" style="background:${f.c}"></i>${f.o} <span class="muted small">niv. ${f.lvl||0}</span>${f.s===myFarm?' (vous)':isAlly(f.s)?' · allié':''}${f.wanted?' <b class="dn">RECHERCHÉ</b>':''}</td><td class="n">${eur(f.w)}</td><td class="n">${f.kl}</td><td class="n">${f.dt}</td><td class="n">${nf0.format(f.pil)}</td><td class="n">${f.k}</td><td class="n">${f.b?'<b style="color:var(--accent)">'+eur(f.b)+'</b>':'—'}</td><td>${f.on?'<span class="up">En ligne</span>':'<span class="muted">Hors ligne</span>'}</td></tr>`).join('')}</tbody></table></div><p class="small muted">Nuit actuelle : ${world.n}.</p></section>${bounty}${diplo}`;
 }
 function pHelp(){
-  const K=[['player','ZQSD / flèches','Se déplacer et conduire. En véhicule, la flèche donne la direction ; la flèche opposée fait reculer (ou X).'],['till','Espace','À pied : utiliser l’outil sur la case encadrée en jaune (maintenir pour enchaîner). En véhicule : abaisser / relever l’outil.'],['farm','E','Monter / descendre d’un véhicule, décharger devant votre ferme, sinon ouvrir la boutique.'],['seeds','1 à 5 · R','Outils : bêche, graines, arrosoir, faucille, engrais. R change de graine. En tracteur : 1 charrue, 2 semoir, 3 pulvérisateur.'],['b_moulin','C','Bâtiments : construire moulin, serre, ruches, pièges… juste au-dessus de vous, dans votre ferme.'],['player','V','Lancer une moquerie au-dessus de votre tête (les autres la voient).'],['fire','I','Mettre le feu à la culture ennemie en face de vous (allumettes, onglet Défense).'],['gun','F','Tirer sur la cible la plus proche : voleur, élève ennemi, ses gardes ou ses tours (visée automatique). Pas de combat au village.'],['steal','Faucille · E','Chez un ennemi : faucille (4) + Espace pour voler ses récoltes mûres, E devant sa ferme pour piller son entrepôt.'],['pact','L','Classement et diplomatie : proposer, accepter ou rompre un pacte d’amitié.'],['whip','T','Coup de fouet à un ouvrier proche.'],['chat','Entrée','Écrire dans le chat de la classe.'],['rank','B · P · G · M · L','Boutique, Défense, Équipe, Marché, Classement et pactes.']];
+  const K=[['player','ZQSD / flèches','Se déplacer et conduire. En véhicule, la flèche donne la direction ; la flèche opposée fait reculer (ou X).'],['till','Espace','À pied : utiliser l’outil sur la case encadrée en jaune (maintenir pour enchaîner). En véhicule : abaisser / relever l’outil.'],['farm','E','Monter / descendre d’un véhicule, décharger devant votre ferme, sinon ouvrir la boutique.'],['seeds','1 à 5 · R','Outils : bêche, graines, arrosoir, faucille, engrais. R change de graine. En tracteur : 1 charrue, 2 semoir, 3 pulvérisateur.'],['b_moulin','C','Bâtiments : construire moulin, serre, ruches, pièges… juste au-dessus de vous, dans votre ferme.'],['player','V','Lancer une moquerie au-dessus de votre tête (les autres la voient).'],['rank','Tab (maintenir)','Afficher le classement tant que la touche est enfoncée.'],['fire','I','Mettre le feu à la culture ennemie en face de vous (allumettes, onglet Défense).'],['gun','F','Tirer sur la cible la plus proche : voleur, élève ennemi, ses gardes ou ses tours (visée automatique). Pas de combat au village.'],['steal','Faucille · E','Chez un ennemi : faucille (4) + Espace pour voler ses récoltes mûres, E devant sa ferme pour piller son entrepôt.'],['pact','L','Classement et diplomatie : proposer, accepter ou rompre un pacte d’amitié.'],['whip','T','Coup de fouet à un ouvrier proche.'],['chat','Entrée','Écrire dans le chat de la classe.'],['rank','B · P · G · M · L','Boutique, Défense, Équipe, Marché, Classement et pactes.']];
   const acc=card('shield','Mon compte · '+myName,`<span class="small muted">Votre mot de passe protège votre ferme quand vous n’êtes pas là.</span><input type="password" id="pwOld" placeholder="Ancien mot de passe" autocomplete="current-password" aria-label="Ancien mot de passe"><input type="password" id="pwNew" placeholder="Nouveau (4 caractères min.)" autocomplete="new-password" aria-label="Nouveau mot de passe"><button class="btn pri" data-a="setPwBtn">Changer le mot de passe</button><div class="row"><button class="btn" data-a="logoutBtn">Se déconnecter</button><button class="btn red" data-a="logoutBtn" data-all="1">Déconnecter tous les ordinateurs</button></div>`);
   return `<section><h3>Mon compte</h3><div class="cards">${acc}</div></section><section class="intro">${ic('play',48)}<p>Besoin d’un rappel ? <button class="btn pri" data-a="video">▶ Revoir la vidéo explicative</button> <button class="btn" data-a="admOpen">⚙ Menu admin</button></p></section><section><h3>Commandes</h3><div class="cards">${K.map(([i,k,d])=>card(i,`<kbd>${k}</kbd>`,`<span class="small">${d}</span>`)).join('')}</div></section><section>${stepsHTML()}</section>
   <section><h3>Fonctionnalités</h3><ul class="feat">${FEATURES.map((f,i)=>`<li>${ic(FEAT_ICONS[i],46)}<span><b>${f[0]}.</b> ${f[1]}</span></li>`).join('')}</ul></section>`;
