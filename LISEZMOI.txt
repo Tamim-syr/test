@@ -120,7 +120,7 @@ Ensuite on tape son nom + son MOT DE PASSE et on clique sur
   dans la fenêtre du serveur).
 - Anciennes fermes (sauvegarde d'avant) : le premier mot de passe
   tapé devient le leur, donc chacun doit se reconnecter vite.
-- 8 fermes maximum.
+- 20 fermes maximum.
 - Sur le PC serveur lui-même : http://localhost:3000
 
 
@@ -219,7 +219,7 @@ I                  Mettre le feu à la culture ennemie en face (allumettes)
 
 8. FONCTIONNALITÉS
 ------------------
-- Monde persistant, grande carte de 8 fermes et un village central
+- Monde persistant, grande carte jusqu’à 20 fermes et un village central
 - Chaque ferme : 4 champs, entrepôt, garage, haies et 4 entrées
 - 6 cultures, arrosage, engrais, météo partagée, journées de 8 min et nuits de 3 min (réglable en haut de server.js)
 - Tracteurs, moissonneuses, module GPS = tout se fait tout seul
@@ -294,3 +294,28 @@ au démarrage suivant (parties, joueurs, mots de passe, exclus).
   graines coûtent 25 % de plus, les salaires sont plus élevés et
   agrandir la ferme démarre à 7 500 €. Réglable en haut de server.js
   (COST_MULT et SELL_MULT).
+
+
+12. NOUVEAUTÉS : 20 JOUEURS ET VRAIE BOURSE
+-------------------------------------------
+- Jusqu'à 20 fermes (4 rangées de 5, le village au milieu). L'hôte
+  choisit de 1 à 20 joueurs dans la salle d'attente ou le menu admin.
+  Les anciennes parties sont converties automatiquement sans rien
+  perdre (fermes, cultures, bâtiments, argent).
+- Le serveur n'envoie à chaque élève que ce qui est près de son écran :
+  le trafic reste raisonnable même à 20 (environ 40 Ko/s par élève).
+- BOURSE : chaque produit a une « profondeur » de marché. Plus on en
+  vend, plus le cours chute, même pendant la vente (vendre 2 000 kg de
+  fraises d'un coup rapporte environ 2 fois moins qu'à l'unité). Les
+  fraises saturent très vite, le blé et la pomme de terre beaucoup
+  moins. Un produit très vendu devient « Saturé » pendant plusieurs
+  minutes, puis le cours remonte tout seul.
+- Chaque matin, un produit est très demandé (cours +50 %) et un autre
+  est boudé (-40 %) : annoncé dans le chat.
+- Les produits transformés (farine, huile, confiture, œufs, miel) se
+  vendent 2 à 3 fois plus cher que la matière première et leur marché
+  sature beaucoup moins : les bâtiments deviennent rentables.
+- Le marché affiche la demande de chaque produit et, pour chaque
+  stock, ce que vous toucherez vraiment si vous vendez tout.
+- Réglages en haut de server.js : DEPTH / PDEPTH (taille des marchés),
+  FLOOR (prix plancher), RECOVER_S (vitesse de reprise).

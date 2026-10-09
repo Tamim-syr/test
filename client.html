@@ -35,7 +35,7 @@ button{font:inherit;color:inherit}
 .hud-tl .v{font-family:var(--f-m);font-size:16px}
 .raid{color:var(--bad);font-weight:700}
 .hud-tr{position:absolute;top:10px;right:10px;padding:6px;display:grid;gap:6px;justify-items:end}
-#mini{display:block;border-radius:4px;image-rendering:pixelated;width:212px;height:104px;cursor:grab;touch-action:none}#mini:active{cursor:grabbing}.vhint{opacity:.75;font-size:12px}
+#mini{display:block;border-radius:4px;image-rendering:pixelated;width:184px;height:137px;cursor:grab;touch-action:none}#mini:active{cursor:grabbing}.vhint{opacity:.75;font-size:12px}
 .menu{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:212px}
 .hud-bl{position:absolute;left:10px;bottom:10px;padding:8px 12px;display:grid;gap:4px;min-width:190px;max-width:260px}
 .bar{height:6px;background:#2a3825;border-radius:3px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent)}
@@ -214,14 +214,14 @@ td.n{font-family:var(--f-m);text-align:right}
 .board .tag{font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px;font-family:var(--f-b)}
 .jamhud .v{color:#C4B2FF!important}
 @media (max-width:640px){.vcap{font-size:15px}.vbar button span{display:none}.vplay{font-size:20px}}
-@media (max-width:640px){.hud-tl{max-width:calc(100% - 150px);gap:10px}.hud-tl .v{font-size:14px}#mini{width:140px;height:69px}.slot{width:52px;height:56px}.hud-bl{min-width:150px}.start h1{font-size:34px}}
+@media (max-width:640px){.hud-tl{max-width:calc(100% - 150px);gap:10px}.hud-tl .v{font-size:14px}#mini{width:116px;height:86px}.slot{width:52px;height:56px}.hud-bl{min-width:150px}.start h1{font-size:34px}}
 </style>
 </head>
 <body>
 <div class="game" id="game" tabindex="0" aria-label="Zone de jeu">
   <canvas id="c"></canvas>
   <div class="hud-tl glass" id="hudtl"></div>
-  <div class="hud-tr glass"><canvas id="mini" width="159" height="78" title="Carte : cliquez pour observer une ferme"></canvas>
+  <div class="hud-tr glass"><canvas id="mini" width="198" height="147" title="Carte : cliquez pour observer une ferme"></canvas>
     <div class="menu">
       <button class="btn" data-a="open" data-t="boutique">Boutique</button><button class="btn" data-a="open" data-t="defense">Défense</button><button class="btn" data-a="open" data-t="equipe">Équipe</button><button class="btn" data-a="open" data-t="batiments">Bâtiments</button><button class="btn" data-a="open" data-t="marche">Marché</button><button class="btn" data-a="open" data-t="classement">Classement</button><button class="btn" data-a="open" data-t="aide" aria-label="Aide">?</button>
     </div><div class="quests" id="quests" aria-live="polite"></div></div>
@@ -287,7 +287,7 @@ td.n{font-family:var(--f-m);text-align:right}
 /* ======================= Liste des fonctionnalités (écran d'accueil) ======================= */
 const FEATURES=[
  ['Monde persistant','La partie ne finit jamais : tout est sauvegardé sur le PC serveur, vous retrouvez votre ferme avec le même nom.'],
- ['Grande carte, 8 fermes','Chaque élève a sa ferme clôturée de haies, avec 4 entrées, 4 champs, entrepôt et garage, autour d’un village central.'],
+ ['Grande carte, jusqu’à 20 fermes','Chaque élève a sa ferme clôturée de haies, avec 4 entrées, 4 champs, entrepôt et garage, autour d’un village central.'],
  ['Cultures et météo','Blé, maïs, colza, tournesol, pomme de terre, fraise. Arrosage, engrais, pluie et orages partagés, cycle jour/nuit.'],
  ['Machines et GPS','Conduisez tracteur et moissonneuse ; avec le module GPS ils labourent, sèment, arrosent et récoltent tout seuls.'],
  ['Ouvriers','Embauchez des ouvriers autonomes (6 au départ, plus en agrandissant la ferme). Plan de culture par champ, coup de fouet (T), moral, grève, primes.'],
@@ -323,7 +323,7 @@ const FEATURES=[
 
 
 /* ======================= État client ======================= */
-const CLIENT_VERSION='2026-10-08-centre3';
+const CLIENT_VERSION='2026-10-09-bourse20';
 function showErr(msg){const st=$('#status');st.hidden=false;st.style.borderColor='#B0382B';st.innerHTML=msg;clearTimeout(showErr.t);if(!showErr.sticky)showErr.t=setTimeout(()=>{st.hidden=true;st.style.borderColor=''},8000)}
 window.addEventListener('blur',()=>showBoard(false));
 window.addEventListener('error',e=>{if(joined)showErr('Erreur dans la page : '+String(e.message||e).slice(0,160)+'<br><span class="small muted">Faites Ctrl+F5. Si ça continue, remplacez server.js ET client.html puis redémarrez le serveur.</span>')});
@@ -334,7 +334,7 @@ let myId=0,myFarm=-1,me=null,pub=[],prices={},ph={},contract=null,world={tm:420,
 const ents={pl:new Map(),ag:new Map(),ve:new Map(),th:new Map(),gu:new Map()};
 let towers=[],bulletsS=[],pacts=[];
 const isAlly=f=>f===myFarm||(me&&me.allies.includes(f));
-const inTownY=y=>y>=34&&y<=44;
+let TOWN=[68,78],DEPTH={},PDEPTH={},sat={},hotCold=[];const inTownY=y=>y>=TOWN[0]&&y<=TOWN[1]+.99;
 const online=f=>pub[f]&&pub[f].on;
 let lastSnapAt=0,admOk=false,admState=null,admConfirm=-1,fires=[],BLDS={},PRODUCTS={},builds=[],cow=null,chest=null,questsMin=false,ACT=[],viewAt=null,prepLeft=0,prepAt=0,prepBlockT=-9,inLobby=false,myName='',ws=null,joined=false,panel=null,chatOpen=false,pendingPw='',sessTok='';
 const STORE={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
@@ -374,7 +374,7 @@ function onMsg(m){
   if(m.t==='welcome'){
     if(m.ver!==CLIENT_VERSION){showErr.sticky=true;showErr('Le serveur et la page n’ont pas la même version.<br><span class="small">Sur le PC serveur : remplacez <b>server.js</b> et <b>client.html</b> par ceux du même zip, redémarrez le serveur, puis faites <b>Ctrl+F5</b> ici.</span>')}
     myName=pendingName;sessTok=m.tok||'';pendingPw='';$('#pw').value='';STORE.set('tv_name',myName);STORE.set(tokKey(myName),$('#remember').checked?sessTok:'');
-    myId=m.id;myFarm=m.farm;pacts=m.pacts||[];W=m.W;H=m.H;G=Uint8Array.from(m.G,c=>+c);FIELDS=m.fields;SLOTS=m.slots;BUILD=m.build;CROPS=m.crops;PRICES=m.prices;WAGE=m.wage;LIMIT=m.limit;TOWER=m.tower;GUN=m.gun;TT=m.tt;
+    myId=m.id;myFarm=m.farm;pacts=m.pacts||[];W=m.W;H=m.H;if(m.town)TOWN=m.town;DEPTH=m.depth||{};PDEPTH=m.pdepth||{};G=Uint8Array.from(m.G,c=>+c);FIELDS=m.fields;SLOTS=m.slots;BUILD=m.build;CROPS=m.crops;PRICES=m.prices;WAGE=m.wage;LIMIT=m.limit;TOWER=m.tower;GUN=m.gun;TT=m.tt;
     ACT=m.act||SLOTS.map(()=>1);BLDS=m.bld||{};PRODUCTS=m.products||{};builds=m.bd||[];
     fieldOf=new Int16Array(W*H).fill(-1);for(const f of FIELDS)if(ACT[f.farm])for(let y=f.y;y<f.y+f.h;y++)for(let x=f.x;x<f.x+f.w;x++)fieldOf[idx(x,y)]=f.id;
     till=new Uint8Array(W*H);wet=new Uint8Array(W*H);crop=new Int8Array(W*H).fill(-1);grow=new Uint8Array(W*H);fert=new Uint8Array(W*H);
@@ -392,7 +392,7 @@ function onMsg(m){
     applyTiles(m.ti);
     syncEnts('pl',m.pl);syncEnts('ag',m.ag);syncEnts('ve',m.ve);syncEnts('th',m.th);syncEnts('gu',m.gu);
     towers=m.to;bulletsS=m.bu;if(m.bd)builds=m.bd;fires=m.fire||[];cow=m.cow||null;chest=m.chest||null;
-    if(m.pub){pub=m.pub;prices=m.pr;ph=m.ph;contract=m.ct;pacts=m.pacts||pacts}
+    if(m.pub){pub=m.pub;prices=m.pr;ph=m.ph;contract=m.ct;if(m.sat)sat=m.sat;if(m.hot)hotCold=m.hot;pacts=m.pacts||pacts}
     const hk=q=>q?[q.tool,q.veh,q.seed,JSON.stringify(q.seeds),q.gun,q.ammo].join('|'):'';const prevTool=hk(me);
     if(m.me)me=m.me;
     if(hk(me)!==prevTool)renderHotbar();
@@ -487,7 +487,7 @@ function predictMe(dt){
 function sendInput(force){
   if(!joined)return;
   let ix=0,iy=0;if(!panel&&!chatOpen&&!viewAt){if(isLeft())ix--;if(isRight())ix++;if(isUp())iy--;if(isDown())iy++;ix+=joy.x;iy+=joy.y}
-  const o={t:'in',ix:+ix.toFixed(2),iy:+iy.toFixed(2),use:useHeld&&!panel,fire:fireHeld&&!panel,rev:!!keys.KeyX&&!panel};
+  const o={t:'in',ix:+ix.toFixed(2),iy:+iy.toFixed(2),use:useHeld&&!panel,fire:fireHeld&&!panel,rev:!!keys.KeyX&&!panel};if(viewAt){o.vx=Math.round(viewAt.x);o.vy=Math.round(viewAt.y)}
   if(predicting()&&L){o.px=+L.x.toFixed(3);o.py=+L.y.toFixed(3);o.pdx=L.dx;o.pdy=L.dy;o.mv=L.moving?1:0;o.tp=localTp}
   const s=JSON.stringify(o);const now=performance.now();
   if(force||(s!==lastIn&&now-lastInT>=45)||now-lastInT>250){lastIn=s;lastInT=now;send(o)}
@@ -529,7 +529,7 @@ function showLobby(L){
   $('#lbNum').textContent=n;$('#lbOf').textContent=L.n;$('#lbFill').style.width=Math.min(100,n/L.n*100)+'%';
   const miss=Math.max(0,L.n-n);
   $('#lbSub').innerHTML=L.cd?'Tout le monde est là !':miss?`On attend encore <b>${miss}</b> joueur${miss>1?'s':''}. Donnez l’adresse du site à vos camarades : la partie démarre toute seule pour tout le monde dès que vous êtes ${L.n}.`:'';
-  const nums=[1,2,3,4,5,6,7,8].map(k=>`<button class="btn${k===L.n?' on':''}" data-a="lobbyN" data-k="${k}" aria-pressed="${k===L.n}">${k}</button>`).join('');
+  const nums=Array.from({length:20},(_,i)=>i+1).map(k=>`<button class="btn${k===L.n?' on':''}" data-a="lobbyN" data-k="${k}" aria-pressed="${k===L.n}">${k}</button>`).join('');
   $('#lbHost').innerHTML=host?`<div style="display:grid;gap:8px"><span class="lbl">Vous êtes l’hôte · nombre de joueurs</span><div class="nums">${nums}</div><div class="row">${L.cd?'<button class="btn" data-a="lobbyStop">Attendre encore</button>':`<button class="btn pri" data-a="lobbyGo">Lancer maintenant avec ${n} joueur${n>1?'s':''}</button>`}</div></div>`
     :`<span class="small muted">L’hôte <b>${escH(hostName)}</b> choisit le nombre de joueurs et peut lancer la partie à tout moment.</span>`;
   const slots=Math.max(L.n,n);let h='';
@@ -553,7 +553,7 @@ function admRender(force){
   if(!admOk||!admState){box.innerHTML=`<div class="asec"><h3>Connexion</h3><span class="small muted">Réservé à l’organisateur. Tapez le code personnel de l’organisateur.</span><div class="row"><input type="password" id="admPw" placeholder="Code admin" autocomplete="off" aria-label="Code admin"><button class="btn pri" data-a="admLogin">Se connecter</button></div></div>`;setTimeout(()=>{const i=$('#admPw');if(i)i.focus()},30);return}
   const S=admState,h=Math.floor(S.tm/60),mi=S.tm%60;
   const status=S.lobby?'<b>Salle d’attente</b> · le monde est en pause':`<b>Partie en cours</b> · jour ${S.day}, ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}${S.prep?` · préparation encore <b>${mmss(S.prep)}</b>`:''}`;
-  const nums=[1,2,3,4,5,6,7,8].map(k=>`<button class="btn${k===S.n?' pri':''}" data-a="admN" data-k="${k}" aria-pressed="${k===S.n}">${k}</button>`).join('');
+  const nums=Array.from({length:20},(_,i)=>i+1).map(k=>`<button class="btn${k===S.n?' pri':''}" data-a="admN" data-k="${k}" aria-pressed="${k===S.n}">${k}</button>`).join('');
   const rows=S.farms.filter(f=>f.o).map(f=>`<tr><td><i class="sw" style="background:${f.c}"></i><b>${escH(f.o)}</b></td><td>${f.on?'<span class="up">en ligne</span>':'hors ligne'}${f.act?'':' · <span class="muted">hors partie</span>'}</td><td class="num">${eur(f.money)}</td><td>niv. ${f.lvl}</td>
     <td><div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn" data-a="admMoney" data-k="${f.s}">Donner</button>${f.on?`<button class="btn" data-a="admDo" data-x="kick" data-k="${f.s}">Déconnecter</button>`:''}<button class="btn" data-a="admDo" data-x="pwreset" data-k="${f.s}">Effacer mdp</button>${(()=>{const b=(S.bans||[]).find(b=>b.name.toLowerCase()===f.o.toLowerCase());return b?`<button class="btn" data-a="admDo" data-x="unban" data-i="${b.i}">Réintégrer</button>`:cBtn('ban',f.s,'','Exclure')})()}${cBtn('free',f.s,'','Libérer')}</div></td></tr>`).join('');
   const dfmt=t=>t?new Date(t).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
@@ -1171,17 +1171,20 @@ function pBuild(){
   <section><h3>Vos produits</h3><div class="cards">${card('p_confiture','Stock de produits transformés',prodRows+'<span class="small muted">À vendre dans l’onglet Marché.</span>')}${list?card('b_statue','Vos bâtiments',list):''}</div></section>`;
 }
 function pMarket(){
-  const tot=CK().reduce((a,k)=>a+me.store[k]*prices[k],0);
-  const rows=CK().map(k=>{const h=ph[k]||[],p=prices[k],ch=h.length>1?(p/h[h.length-2]-1)*100:0,q=me.store[k];return `<tr><td><span class="row" style="flex-wrap:nowrap">${ic('crop_'+k,30)}${CROPS[k].n}</span></td><td class="n">${nf0.format(q)} kg</td><td class="n">${nf2.format(p)} €</td><td class="n ${ch>=0?'up':'dn'}">${ch>=0?'▲':'▼'} ${nf0.format(Math.abs(ch))} %</td><td class="n">${eur(q*p)}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" data-a="sell" data-k="${k}" data-q="half" ${q>1?'':'disabled'}>Moitié</button><button class="btn pri" data-a="sell" data-k="${k}" data-q="all" ${q?'':'disabled'}>Tout</button></div></td></tr>`}).join('');
+  const est=(k,q,p,prod)=>{const D=(prod?PDEPTH:DEPTH)[k]||1e9,x=q/D;return{v:q*p*(x>1e-6?(1-Math.exp(-x))/x:1),drop:(1-Math.exp(-x))*100}};
+  const dem=(k,p,base)=>{const r=p/base;const tag=hotCold[0]===k?' <b class="up">très demandé</b>':hotCold[1]===k?' <b class="dn">boudé</b>':'';
+    return (r>=1.25?'<span class="up">Forte</span>':r>=.85?'Normale':r>=.55?'<span class="dn">Faible</span>':'<b class="dn">Saturé</b>')+tag};
+  const tot=CK().reduce((a,k)=>a+est(k,me.store[k],prices[k]).v,0);
+  const rows=CK().map(k=>{const h=ph[k]||[],p=prices[k],ch=h.length?(p/h[h.length-1]-1)*100:0,q=me.store[k],E=est(k,q,p);return `<tr><td><span class="row" style="flex-wrap:nowrap">${ic('crop_'+k,30)}${CROPS[k].n}</span></td><td class="n">${nf0.format(q)} kg</td><td class="n">${nf2.format(p)} €</td><td class="n ${ch>=0?'up':'dn'}">${ch>=0?'▲':'▼'} ${nf0.format(Math.abs(ch))} %</td><td>${dem(k,p,CROPS[k].p)}</td><td class="n">${eur(E.v)}${q?`<br><span class="small muted">cours −${nf0.format(E.drop)} %</span>`:''}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" data-a="sell" data-k="${k}" data-q="half" ${q>1?'':'disabled'}>Moitié</button><button class="btn pri" data-a="sell" data-k="${k}" data-q="all" ${q?'':'disabled'}>Tout</button></div></td></tr>`}).join('');
   const C=contract;
   const con=C&&!C.done?card('crop_'+C.k,'Commande de la coopérative',`<span class="small muted">Le premier joueur qui livre remporte le contrat.</span><div class="kv"><span>Produit</span><span>${nf0.format(C.q)} kg ${CROPS[C.k].n}</span></div><div class="kv"><span>Prix garanti</span><span>${nf2.format(C.p)} €/kg</span></div><div class="kv"><span>Valeur</span><span>${eur(C.q*C.p)}</span></div><div class="kv"><span>Expire</span><span>fin du jour ${C.until}</span></div><button class="btn pri" data-a="contract" ${me.store[C.k]>=C.q?'':'disabled'}>${me.store[C.k]>=C.q?'Livrer la commande':`Stock insuffisant (${nf0.format(me.store[C.k])} kg)`}</button>`,' style="max-width:440px"'):'<span class="muted small">Une nouvelle commande arrive le prochain jour.</span>';
   const others=pub.filter(f=>f.o&&f.act!==0&&f.s!==myFarm);
   const give=others.length?card('give','Envoyer de l’argent',`<select id="giveTo" aria-label="Destinataire">${others.map(f=>`<option value="${f.s}">${f.o}</option>`).join('')}</select><input type="number" id="giveAmt" min="10" step="10" value="200" aria-label="Montant"><button class="btn" data-a="give">Envoyer</button>`,' style="max-width:440px"'):'';
   const bo=me.boost;
-  const prow=Object.keys(PRODUCTS).map(k=>{const q=me.prod?me.prod[k]:0,pr=(me.pprices||{})[k]||PRODUCTS[k].p,bb=bo&&bo.k===k;return `<tr><td><span class="row" style="flex-wrap:nowrap">${ic(PROD_ICON[k],30)}${PRODUCTS[k].n}${bb?' <b class="up">+60 %</b>':''}</span></td><td class="n">${nf0.format(q)} kg</td><td class="n">${nf2.format(pr*(bb?1.6:1))} €</td><td class="n">${eur(q*pr*(bb?1.6:1))}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" data-a="sellProd" data-k="${k}" data-q="half" ${q>1?'':'disabled'}>Moitié</button><button class="btn pri" data-a="sellProd" data-k="${k}" data-q="all" ${q>=1?'':'disabled'}>Tout</button></div></td></tr>`}).join('');
-  const prodSec=`<section><h3>Produits transformés</h3><div class="tsc"><table><thead><tr><th>Produit</th><th style="text-align:right">Stock</th><th style="text-align:right">Prix</th><th style="text-align:right">Valeur</th><th>Vendre</th></tr></thead><tbody>${prow}</tbody></table></div><p class="small muted">Construisez moulin, pressoir, confiturerie, poulailler et ruches (onglet Bâtiments) pour en produire.</p></section>`;
+  const prow=Object.keys(PRODUCTS).map(k=>{const q=me.prod?me.prod[k]:0,pr=(me.pprices||{})[k]||PRODUCTS[k].p,bb=bo&&bo.k===k,E=est(k,q,pr*(bb?1.6:1),1);return `<tr><td><span class="row" style="flex-wrap:nowrap">${ic(PROD_ICON[k],30)}${PRODUCTS[k].n}${bb?' <b class="up">+60 %</b>':''}</span></td><td class="n">${nf0.format(q)} kg</td><td class="n">${nf2.format(pr*(bb?1.6:1))} €</td><td>${dem(k,pr,PRODUCTS[k].p)}</td><td class="n">${eur(E.v)}${q>=1?`<br><span class="small muted">cours −${nf0.format(E.drop)} %</span>`:''}</td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" data-a="sellProd" data-k="${k}" data-q="half" ${q>1?'':'disabled'}>Moitié</button><button class="btn pri" data-a="sellProd" data-k="${k}" data-q="all" ${q>=1?'':'disabled'}>Tout</button></div></td></tr>`}).join('');
+  const prodSec=`<section><h3>Produits transformés</h3><div class="tsc"><table><thead><tr><th>Produit</th><th style="text-align:right">Stock</th><th style="text-align:right">Prix</th><th>Demande</th><th style="text-align:right">Si vous vendez tout</th><th>Vendre</th></tr></thead><tbody>${prow}</tbody></table></div><p class="small muted">Les produits transformés valent 2 à 3 fois plus que la matière première et leur marché sature beaucoup moins vite. Construisez moulin, pressoir, confiturerie, poulailler et ruches (onglet Bâtiments) pour en produire.</p></section>`;
   const boostTxt=bo?`<section class="intro" style="border-color:var(--accent)">${ic('coins',40)}<p><b>Food-truck !</b> ${(CROPS[bo.k]||PRODUCTS[bo.k]||{}).n} acheté <b>60 % plus cher</b> encore ${mmss(bo.t)}.</p></section>`:'';
-  return boostTxt+`<section class="intro">${ic('coins',48)}<p>Vendez ce qui est dans votre entrepôt. Les prix sont les mêmes pour toute la classe : chaque grosse vente fait baisser le cours pour tout le monde.</p></section><section><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">Votre entrepôt</h3><button class="btn pri" data-a="sellall" ${tot>0?'':'disabled'}>Tout vendre · ${eur(tot)}</button></div><div class="tsc"><table><thead><tr><th>Produit</th><th style="text-align:right">Stock</th><th style="text-align:right">Prix</th><th style="text-align:right">Veille</th><th style="text-align:right">Valeur</th><th>Vendre</th></tr></thead><tbody>${rows}</tbody></table></div></section>${prodSec}<section><h3>Coopérative</h3>${con}</section>${give?`<section><h3>Entraide</h3>${give}</section>`:''}`;
+  return boostTxt+`<section class="intro">${ic('coins',48)}<p><b>La bourse est commune à toute la classe.</b> Chaque vente fait chuter le cours <b>pendant</b> la vente : vendre 1 000 kg d’un coup rapporte moins que 10 ventes espacées. Si tout le monde vend la même chose (les fraises…), le produit devient <b>saturé</b> et le reste quelques minutes. Les cours remontent tout seuls quand on arrête de vendre. Chaque jour, un produit est très demandé et un autre boudé : diversifiez vos cultures et transformez-les.</p></section><section><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">Votre entrepôt</h3><button class="btn pri" data-a="sellall" ${tot>0?'':'disabled'}>Tout vendre · ${eur(tot)}</button></div><div class="tsc"><table><thead><tr><th>Produit</th><th style="text-align:right">Stock</th><th style="text-align:right">Prix</th><th style="text-align:right">Depuis ce matin</th><th>Demande</th><th style="text-align:right">Si vous vendez tout</th><th>Vendre</th></tr></thead><tbody>${rows}</tbody></table></div></section>${prodSec}<section><h3>Coopérative</h3>${con}</section>${give?`<section><h3>Entraide</h3>${give}</section>`:''}`;
 }
 function pRank(){
   const list=pub.filter(f=>f.o&&f.act!==0).sort((a,b)=>b.w-a.w);
@@ -1295,7 +1298,7 @@ const VID=(()=>{
   const ME=['#2F7AC7','#C8402F'],FOE=['#C8402F','#2A2A2A'],WORK=['#E2672E','#E9D9A6'];
 
   const SCENES=[
-  {n:'Bienvenue',cap:'Bienvenue sur Terres Vives ! Chaque élève de la classe reçoit sa propre ferme, sur une grande carte de 8 fermes autour d’un village. La partie ne s’arrête jamais : tout est sauvegardé, et vous retrouvez votre ferme avec votre nom et votre mot de passe.',
+  {n:'Bienvenue',cap:'Bienvenue sur Terres Vives ! Chaque élève de la classe reçoit sa propre ferme, sur une grande carte (jusqu’à 20 fermes) autour d’un village. La partie ne s’arrête jamais : tout est sauvegardé, et vous retrouvez votre ferme avec votre nom et votre mot de passe.',
    draw(t,D){
     Wz(48);grass(0,0,21,12);for(let x=0;x<21;x++)pathT(x,10);
     for(let x=0;x<20;x++){if(x<9||x>10)drawHedge(x,9);drawHedge(x,0)}for(let y=1;y<9;y++){drawHedge(0,y);drawHedge(19,y)}

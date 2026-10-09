@@ -10,7 +10,7 @@ const SAVE = path.join(__dirname, 'sauvegarde.json');
 // Durées réelles (en minutes) : modifiez-les librement
 const DUREE_JOUR_MIN = 8;   // de 5 h à 21 h
 const DUREE_NUIT_MIN = 3;   // de 21 h à 5 h
-const VERSION = '2026-10-08-centre3'; // doit être identique dans client.html
+const VERSION = '2026-10-09-bourse20'; // doit être identique dans client.html
 const PREPARATION_MIN = 10; // au lancement : personne ne peut sortir de sa ferme pendant ce temps
 const DAY_REAL = DUREE_JOUR_MIN * 60, NIGHT_REAL = DUREE_NUIT_MIN * 60;
 const DAY = 180;            // référence de pousse des cultures (s réelles par « jour » de croissance)
@@ -50,7 +50,13 @@ const BLD = {
   statue: { n: 'Statue à votre gloire', w: 2, h: 2, price: 12000, max: 1, d: 'Les touristes affluent : +10 % sur toutes vos ventes.' },
 };
 for (const k in BLD) BLD[k].price = Math.round(BLD[k].price * COST_MULT / 50) * 50;
-const PRODUCTS = { farine: { n: 'Farine', p: 2.2 }, huile: { n: 'Huile', p: 4.7 }, confiture: { n: 'Confiture', p: 7.6 }, oeufs: { n: 'Œufs', p: 3.8 }, miel: { n: 'Miel', p: 10 } };
+const PRODUCTS = { farine: { n: 'Farine', p: 2.4 }, huile: { n: 'Huile', p: 5.4 }, confiture: { n: 'Confiture', p: 10 }, oeufs: { n: 'Œufs', p: 4.2 }, miel: { n: 'Miel', p: 11 } };
+// Bourse : « profondeur » de chaque marché = kg qu'on peut vendre avant que le cours tombe à 37 %.
+// Les fraises sont un petit marché (vite saturé), le blé un très gros. Les produits transformés
+// ont une demande bien plus solide : c'est tout l'intérêt des bâtiments.
+const DEPTH = { ble: 9000, mais: 9000, colza: 4000, tournesol: 3500, pdt: 10000, fraise: 1500 };
+const PDEPTH = { farine: 9000, huile: 6000, confiture: 4500, oeufs: 4000, miel: 2500 };
+const FLOOR = .2, CEIL = 2, RECOVER_S = 150, SAT_HALF_S = 300; // reprise du cours en ~2-3 min, mémoire de saturation ~5 min
 const PK = Object.keys(PRODUCTS), PROD_MAX = 3000;
 const QUESTS = [
   { k: 'harv', t: 'Récolter {n} kg', n: [250, 600], r: [250, 550] },
@@ -82,12 +88,14 @@ const TT = {
 };
 const NAMES = ['Lucas', 'Inès', 'Karim', 'Léa', 'Yanis', 'Chloé', 'Malik', 'Jeanne', 'Hugo', 'Nour', 'Théo', 'Sarah', 'Adam', 'Lina', 'Rayan', 'Emma'];
 const OUCH = ['Aïe ! J’y vais patron !', 'Ok ok, je cours !', 'Je vais appeler le syndicat…', 'Promis j’accélère !', 'C’est pas dans mon contrat ça !', 'Ouille ! Au boulot !', 'Ma mère va entendre parler de vous'];
-const FARM_COLORS = ['#E2672E', '#2E8FD6', '#C23B7A', '#8B5CF6', '#16A085', '#D4A017', '#E74C3C', '#5D6D7E'];
+const FARM_COLORS = ['#E2672E', '#2E8FD6', '#C23B7A', '#8B5CF6', '#16A085', '#D4A017', '#E74C3C', '#5D6D7E', '#1ABC9C', '#F06292', '#7CB342', '#3949AB', '#FF8F00', '#00ACC1', '#8D6E63', '#AB47BC', '#43A047', '#F4511E', '#546E7A', '#C0CA33'];
+const MAX_FARMS = 20;
 const FIELD_PRICE = [0, 5000, 8000, 12000];
 const FIELD_NAMES = ['Champ A', 'Champ B', 'Champ C', 'Champ D'];
 
 /* ---------------------------------------------------------------- carte */
-const W = 159, H = 78;
+const W = 198, H = 147;
+const TOWN_Y0 = 68, TOWN_Y1 = 78, TOWN_ROAD = 72; // village au centre, entre les 2 rangées intérieures
 const idx = (x, y) => y * W + x;
 const G = new Uint8Array(W * H);          // 0 herbe, 1 chemin, 2 eau, 3 bâtiment, 4 arbre, 5 haie
 const BLOCK = [0, 0, 1, 1, 1, 1];
@@ -98,11 +106,16 @@ function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let 
 (function buildMap() {
   const R = mulberry(7);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) G[idx(x, y)] = 4;
-  for (let c = 0; c < 5; c++) { const rx = 1 + c * 39; for (let y = 1; y < H - 1; y++) G[idx(rx, y)] = 1; }
-  for (let x = 1; x < W - 1; x++) { G[idx(x, 1)] = 1; G[idx(x, 38)] = 1; G[idx(x, H - 2)] = 1; }
-  for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
-    const x0 = 3 + c * 39, y0 = r === 0 ? 3 : 45, s = SLOTS.length;
-    const sl = { x: x0, y: y0, w: 36, h: 31, row: r };
+  for (let c = 0; c < 6; c++) { const rx = 1 + c * 39; for (let y = 1; y < H - 1; y++) G[idx(rx, y)] = 1; }
+  for (const ry of [1, 35, TOWN_ROAD, 111, H - 2]) for (let x = 1; x < W - 1; x++) G[idx(x, ry)] = 1;
+  // 20 fermes : 4 rangées de 5. Les 8 premières (anciennes fermes) gardent leur numéro, puis les nouvelles.
+  const ROWY = [3, 37, 79, 113], order = [];
+  for (const r of [1, 2]) for (let c = 0; c < 4; c++) order.push([r, c]);
+  order.push([1, 4], [2, 4]);
+  for (const r of [0, 3]) for (let c = 0; c < 5; c++) order.push([r, c]);
+  for (const [r, c] of order) {
+    const x0 = 3 + c * 39, y0 = ROWY[r], s = SLOTS.length;
+    const sl = { x: x0, y: y0, w: 36, h: 31, row: r, col: c, conn: r === 1 ? [y0 + 31, TOWN_ROAD - 1] : r === 2 ? [TOWN_ROAD + 1, y0 - 1] : null };
     // la ferme est au centre, sur une place ; les 4 champs sont dans les coins, l'herbe autour sert aux bâtiments
     sl.door = { x: x0 + 17, y: y0 + 16 };
     sl.homes = [[x0 + 13.5, y0 + 18.5], [x0 + 21.5, y0 + 18.5], [x0 + 12.5, y0 + 12.5], [x0 + 22.5, y0 + 12.5]];
@@ -117,8 +130,7 @@ function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let 
     for (let y = y0; y <= y0 + 30; y++) G[idx(x0 + 17, y)] = 1;
     for (let y = y0 + 10; y <= y0 + 20; y++) for (let x = x0 + 12; x <= x0 + 23; x++) G[idx(x, y)] = 1;
     for (const [ex, ey] of sl.entr) G[idx(ex, ey)] = 1;
-    if (r === 0) for (let y = y0 + 31; y <= 38; y++) G[idx(x0 + 17, y)] = 1;
-    else for (let y = 38; y < y0; y++) G[idx(x0 + 17, y)] = 1;
+    if (sl.conn) for (let y = sl.conn[0]; y <= sl.conn[1]; y++) G[idx(x0 + 17, y)] = 1;
     BUILD.push({ kind: 'ferme', farm: s, n: 'FERME', x: x0 + 14, y: y0 + 11, w: 8, h: 5 });
     for (let y = y0 + 11; y <= y0 + 15; y++) for (let x = x0 + 14; x <= x0 + 21; x++) G[idx(x, y)] = 3;
     G[idx(x0 + 17, y0 + 16)] = 1;
@@ -129,24 +141,24 @@ function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let 
     });
   }
   const town = [
-    { kind: 'marche', n: 'MARCHÉ', x: 61, y: 34, w: 10, h: 3 },
-    { kind: 'police', n: 'COMMISSARIAT', x: 84, y: 34, w: 10, h: 3 },
-    { kind: 'mairie', n: 'MAIRIE', x: 70, y: 40, w: 9, h: 3 },
-    { kind: 'armurerie', n: 'ARMURERIE', x: 104, y: 40, w: 9, h: 3 },
+    { kind: 'marche', n: 'MARCHÉ', x: 81, y: TOWN_Y0, w: 10, h: 3 },
+    { kind: 'police', n: 'COMMISSARIAT', x: 104, y: TOWN_Y0, w: 10, h: 3 },
+    { kind: 'mairie', n: 'MAIRIE', x: 88, y: TOWN_ROAD + 2, w: 9, h: 3 },
+    { kind: 'armurerie', n: 'ARMURERIE', x: 121, y: TOWN_ROAD + 2, w: 9, h: 3 },
   ];
   for (const b of town) { BUILD.push(b); for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) G[idx(x, y)] = 3; }
-  for (let y = 40; y <= 42; y++) for (let x = 46; x <= 52; x++) G[idx(x, y)] = 2;
-  for (let y = 34; y <= 44; y++) for (let x = 2; x < W - 2; x++) if (G[idx(x, y)] === 0 && y !== 37 && y !== 39 && R() < .06) G[idx(x, y)] = 4;
+  for (let y = TOWN_ROAD + 2; y <= TOWN_ROAD + 4; y++) for (let x = 64; x <= 70; x++) G[idx(x, y)] = 2;
+  for (let y = TOWN_Y0; y <= TOWN_Y1; y++) for (let x = 2; x < W - 2; x++) if (G[idx(x, y)] === 0 && y !== TOWN_ROAD - 1 && y !== TOWN_ROAD + 1 && R() < .06) G[idx(x, y)] = 4;
 })();
-const G0 = G.slice(); // carte complète (8 fermes)
-const SLOT_ORDER = [1, 2, 5, 6, 0, 3, 4, 7]; // fermes proches du village d'abord
+const G0 = G.slice(); // carte complète (20 fermes)
+const SLOT_ORDER = [1, 2, 5, 6, 0, 3, 4, 7, 8, 9, 11, 12, 16, 17, 13, 18, 10, 15, 14, 19]; // fermes proches du village d'abord
 let mapVer = 0;
 // fermes inutilisées : transformées en forêt (seules les fermes de la partie existent)
 function forestSlot(s) {
   const sl = SLOTS[s], x0 = sl.x, y0 = sl.y, R = mulberry(100 + s);
   for (let y = y0; y <= y0 + 30; y++) for (let x = x0; x <= x0 + 35; x++) { const edge = x <= x0 + 1 || x >= x0 + 34 || y <= y0 + 1 || y >= y0 + 29; G[idx(x, y)] = edge || R() < .5 ? 4 : 0; }
   for (const [ex, ey] of sl.entr) G[idx(ex, ey)] = 0;
-  if (sl.row === 0) for (let y = y0 + 31; y < 38; y++) G[idx(x0 + 17, y)] = 0; else for (let y = 39; y < y0; y++) G[idx(x0 + 17, y)] = 0;
+  if (sl.conn) for (let y = sl.conn[0]; y <= sl.conn[1]; y++) G[idx(x0 + 17, y)] = 0;
 }
 const isActive = s => !WD.active || !!WD.active[s];
 function applyActive() { G.set(G0); for (let s = 0; s < SLOTS.length; s++) if (!isActive(s)) forestSlot(s); for (const b of (WD.builds || [])) if (isActive(b.farm) && !BLD[b.type].walk) stampBuild(b, 3); mapVer++; }
@@ -283,7 +295,7 @@ function jamTick() {
 /* ---------------------------------------------------------------- combat entre joueurs */
 const pkey = (a, b) => a < b ? a + '-' + b : b + '-' + a;
 const allied = (a, b) => a === b || WD.pacts.includes(pkey(a, b));
-const inTown = (x, y) => y >= 34 && y <= 44;
+const inTown = (x, y) => y >= TOWN_Y0 && y <= TOWN_Y1 + .99;
 const maxHp = fm => 10 + 5 * (fm.up.armor || 0) + 2 * (fm.lvl || 0);
 const aggro = new Map(); // 'défenseur:attaquant' -> fin
 const setAggro = (def, att) => { if (def >= 0 && att >= 0 && def !== att) aggro.set(def + ':' + att, tickTime + 15); };
@@ -821,10 +833,14 @@ function startNight() {
 /* ---------------------------------------------------------------- temps, météo, marché */
 function newDay() {
   WD.day++;
-  WD.pprices = WD.pprices || {}; for (const k of PK) { const b = PRODUCTS[k].p; let v = WD.pprices[k] || b; v = v * (1 + (rnd() - .5) * .12) + (b - v) * .25; WD.pprices[k] = clamp(v, b * .7, b * 1.4); }
+  // tendance du jour : chaque produit a sa « valeur du jour » ; un produit est très demandé, un autre boudé
+  WD.trend = WD.trend || {}; for (const k of CK.concat(PK)) { const t = WD.trend[k] || 1; WD.trend[k] = clamp(t + (1 - t) * .4 + (rnd() - .5) * .3, .7, 1.35); }
+  { const hot = CK[Math.floor(rnd() * CK.length)]; let cold = CK[Math.floor(rnd() * CK.length)]; if (cold === hot) cold = CK[(CK.indexOf(hot) + 1) % CK.length];
+    WD.trend[hot] = 1.5; WD.trend[cold] = .6; WD.hot = hot; WD.cold = cold;
+    sys(`Bourse du jour ${WD.day} : ${CROPS[hot].n.toLowerCase()} très demandé (cours en hausse), ${CROPS[cold].n.toLowerCase()} boudé.`); }
   { const on = WD.farms.filter(f => f.owner && playerOf(f.slot) && isActive(f.slot)); if (on.length >= 2) { const top = on.sort((a, b) => worth(b) - worth(a))[0]; WD.bounty = WD.bounty || {}; WD.bounty[top.slot] = (WD.bounty[top.slot] || 0) + 400; sys(`Prime du jour : la coopérative offre 400 € à qui mettra K.O. ${top.owner}, la ferme la plus riche !`); toast(top.slot, 'Vous êtes la ferme la plus riche : 400 € de prime sur votre tête aujourd’hui !', 'b'); } }
   const r = rnd(); WD.weather = r < .48 ? 'soleil' : r < .72 ? 'nuages' : r < .93 ? 'pluie' : 'orage';
-  for (const k of CK) { const b = CROPS[k].p; let p = WD.prices[k]; p = p * (1 + (rnd() - .5) * .14) + (b - p) * .15; p = clamp(p, b * .6, b * 1.6); WD.prices[k] = p; WD.ph[k].push(p); if (WD.ph[k].length > 14) WD.ph[k].shift(); }
+  for (const k of CK) { WD.ph[k].push(WD.prices[k]); if (WD.ph[k].length > 14) WD.ph[k].shift(); }
   for (const fm of WD.farms) {
     fm.recent = 0;
     if (fm.owner) newQuests(fm);
@@ -917,7 +933,7 @@ function act(p, m) {
     }
     case 'build': { if (!BLD[m.k]) return; buildAt(p, m.k, cost); break; }
     case 'demolish': { const b = WD.builds.find(b => b.id === +m.id && b.farm === p.farm); if (!b) return; WD.builds = WD.builds.filter(q => q !== b); if (!BLD[b.type].walk) { stampBuild(b, 0); mapDirty = true; } buildsDirty = true; fxRefresh(); const back = Math.round(BLD[b.type].price * .4); fm.money += back; toast(p.farm, `${BLD[b.type].n} démoli (+${eur(back)})`, 'g'); break; }
-    case 'sellProd': { const k = m.k; if (!PRODUCTS[k]) return; fm.prod = fm.prod || {}; const q = Math.floor(m.q === 'all' ? fm.prod[k] || 0 : (fm.prod[k] || 0) / 2); if (q <= 0) return; const v = q * pprice(k) * saleMult(p.farm, k); fm.prod[k] -= q; fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); WD.pprices[k] = pprice(k) * (1 - Math.min(.1, q / 8000)); toast(p.farm, `Vente : ${eur(v)}`, 'g'); break; }
+    case 'sellProd': { const k = m.k; if (!PRODUCTS[k]) return; fm.prod = fm.prod || {}; const q = Math.floor(m.q === 'all' ? fm.prod[k] || 0 : (fm.prod[k] || 0) / 2); if (q <= 0) return; const v = marketSell(k, q) * saleMult(p.farm, k); fm.prod[k] -= q; fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); toast(p.farm, `Vente : ${eur(v)}`, 'g'); break; }
     case 'emote': { if (p.emoteCd > 0) return; p.emoteCd = 2.5; const list = TAUNTS; let k = Math.floor(rnd() * list.length); if (list[k] === p.say) k = (k + 1) % list.length; p.say = list[k]; p.sayT = 3.5; break; }
     case 'burn': burn(p); break;
     case 'matches': { if ((fm.matches || 0) >= 9) { hint(p, 'Maximum 9 allumettes'); return; } if (cost(PRICES.matches)) { fm.matches = (fm.matches || 0) + 3; toast(p.farm, `+3 allumettes (${fm.matches})`, 'g'); } break; }
@@ -930,8 +946,8 @@ function act(p, m) {
     case 'hire': { if (WD.agents.filter(a => a.farm === p.farm).length >= lim(fm, 'agents')) { hint(p, 'Maximum atteint : agrandissez la ferme'); return; } if (cost(PRICES.agent)) { const a = mkAgent(p.farm, Math.floor(rnd() * 100)); WD.agents.push(a); toast(p.farm, `${a.name} rejoint la ferme`, 'g'); } break; }
     case 'fireAgent': { const a = WD.agents.find(x => x.id === +m.id && x.farm === p.farm); if (!a) return; releaseTask(a); deposit(a.bag, p.farm); WD.agents = WD.agents.filter(x => x !== a); break; }
     case 'prime': { const a = WD.agents.find(x => x.id === +m.id && x.farm === p.farm); if (!a) return; if (cost(50)) { a.morale = Math.min(100, a.morale + 40); a.strike = 0; a.say = 'Merci patron !'; a.sayT = 2.5; } break; }
-    case 'sell': { const k = m.k; if (!CROPS[k]) return; const q = m.q === 'all' ? fm.store[k] : Math.floor(fm.store[k] / 2); if (!q) return; const v = q * WD.prices[k] * saleMult(p.farm, k); fm.store[k] -= q; fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); WD.prices[k] *= 1 - Math.min(.12, q / 30000); toast(p.farm, `Vente : ${eur(v)}`, 'g'); break; }
-    case 'sellall': { let v = 0; for (const k of CK) { const q = fm.store[k]; if (!q) continue; v += q * WD.prices[k] * saleMult(p.farm, k); WD.prices[k] *= 1 - Math.min(.12, q / 30000); fm.store[k] = 0; } fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); toast(p.farm, `Tout vendu : ${eur(v)}`, 'g'); break; }
+    case 'sell': { const k = m.k; if (!CROPS[k]) return; const q = m.q === 'all' ? fm.store[k] : Math.floor(fm.store[k] / 2); if (!q) return; const v = marketSell(k, q) * saleMult(p.farm, k); fm.store[k] -= q; fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); toast(p.farm, `Vente : ${eur(v)}`, 'g'); break; }
+    case 'sellall': { let v = 0; for (const k of CK) { const q = fm.store[k]; if (!q) continue; v += marketSell(k, q) * saleMult(p.farm, k); fm.store[k] = 0; } fm.money += v; fm.stats.sold += v; qAdd(p.farm, 'sell', v); toast(p.farm, `Tout vendu : ${eur(v)}`, 'g'); break; }
     case 'contract': { const C = WD.contract; if (!C || C.done || fm.store[C.k] < C.q) return; fm.store[C.k] -= C.q; fm.money += C.q * C.p; C.done = true; sys(`${fm.owner} a remporté la commande de la coopérative (${eur(C.q * C.p)}) !`); break; }
     case 'give': { const to = WD.farms[+m.to], amt = Math.floor(+m.amt); if (!to || !to.owner || to === fm || !(amt > 0)) return; if (cost(amt)) { to.money += amt; toast(to.slot, `${fm.owner} vous a envoyé ${eur(amt)}`, 'g'); toast(p.farm, `${eur(amt)} envoyés à ${to.owner}`, 'g'); } break; }
     case 'tower': {
@@ -1000,23 +1016,32 @@ function meInfo(p) {
     offersIn: WD.offers.filter(o => o.to === p.farm).map(o => o.from), offersOut: WD.offers.filter(o => o.from === p.farm).map(o => o.to),
   };
 }
+// zone d'intérêt : les ouvriers / véhicules / gardes loin de l'écran d'un joueur ne lui sont pas envoyés
+// (avec 20 fermes, ça divise le trafic par ~3). Ceux de sa propre ferme sont toujours envoyés.
+const AOI_X = 46, AOI_Y = 30;
+const aoi = (farm, x, y, arr) => ({ farm, x, y, j: JSON.stringify(arr) });
+function aoiJoin(list, p) {
+  const c = p.view || p, out = [];
+  for (const e of list) if (e.farm === p.farm || (Math.abs(e.x - c.x) < AOI_X && Math.abs(e.y - c.y) < AOI_Y)) out.push(e.j);
+  return '[' + out.join(',') + ']';
+}
 function snapshot(tick) {
   const s = {
     t: 's', prep: inPrep() ? Math.ceil(PREP_END - tickTime) : 0, tm: Math.round(WD.time), d: WD.day, n: WD.night, w: WD.weather,
     ti: tileDiff(false),
     pl: [...players.values()].filter(p => p.joined).map(p => [p.id, p.farm, r2(p.x), r2(p.y), p.dx, p.dy, p.moving ? 1 : 0, p.veh, WD.farms[p.farm].owner, load_(p.bag) > 0 ? 1 : 0, Math.ceil(Math.max(0, p.hp)), maxHp(WD.farms[p.farm]), p.ko > 0 ? 1 : 0, p.inv > 0 ? 1 : 0, p.hitT > 0 ? 1 : 0, p.sayT > 0 ? p.say : '', p.stun > 0 ? 1 : p.slow > 0 ? 2 : 0, heldOf(p), p.actT > 0 ? 1 : 0]),
-    ag: WD.agents.filter(a => isActive(a.farm)).map(a => [a.id, a.farm, r2(a.x), r2(a.y), a.dx, a.dy, a.moving && a.pi < a.path.length ? 1 : 0, a.name + ' · ' + a.msg, a.sayT > 0 ? a.say : '', a.strike > 0 ? 1 : 0, a.boost > 0 ? 1 : 0, a.hop > 0 ? r2(a.hop) : 0, load_(a.bag) > 0 ? 1 : 0, a.wait > 0 ? 1 : 0]),
-    ve: WD.veh.filter(v => isActive(v.farm)).map(v => [v.id, v.farm, v.type, r2(v.x), r2(v.y), r2(v.a), v.impl, v.lower ? 1 : 0, v.auto ? 1 : 0, v.gps && v.fullAuto ? (v.status || 'auto') : (v.auto ? 'auto' : ''), v.bag ? r2(load_(v.bag) / v.bag.cap) : 0, v.name, r2(v.v)]),
+    ag: WD.agents.filter(a => isActive(a.farm)).map(a => aoi(a.farm, a.x, a.y, [a.id, a.farm, r2(a.x), r2(a.y), a.dx, a.dy, a.moving && a.pi < a.path.length ? 1 : 0, a.name + ' · ' + a.msg, a.sayT > 0 ? a.say : '', a.strike > 0 ? 1 : 0, a.boost > 0 ? 1 : 0, a.hop > 0 ? r2(a.hop) : 0, load_(a.bag) > 0 ? 1 : 0, a.wait > 0 ? 1 : 0])),
+    ve: WD.veh.filter(v => isActive(v.farm)).map(v => aoi(v.farm, v.x, v.y, [v.id, v.farm, v.type, r2(v.x), r2(v.y), r2(v.a), v.impl, v.lower ? 1 : 0, v.auto ? 1 : 0, v.gps && v.fullAuto ? (v.status || 'auto') : (v.auto ? 'auto' : ''), v.bag ? r2(load_(v.bag) / v.bag.cap) : 0, v.name, r2(v.v)])),
     th: thieves.map(t => [t.id, t.type, r2(t.x), r2(t.y), t.hp, t.maxhp, t.state === 'flee' ? 1 : 0, t.dx, t.dy, load_(t.loot) > 0 ? 1 : 0, t.hit > 0 ? 1 : 0, t.farm]),
     to: WD.towers.filter(t => isActive(t.farm)).map(t => [t.id, t.farm, t.x, t.y, t.lvl, Math.ceil(t.hp ?? towerMax(t)), towerMax(t)]),
-    gu: WD.guards.filter(g => isActive(g.farm)).map(g => [g.id, g.farm, g.type, r2(g.x), r2(g.y), g.dx, g.dy, g.moving ? 1 : 0, Math.ceil(g.hp ?? GHP[g.type]), GHP[g.type], g.ko > 0 ? 1 : 0, g.hitT > 0 ? 1 : 0]),
+    gu: WD.guards.filter(g => isActive(g.farm)).map(g => aoi(g.farm, g.x, g.y, [g.id, g.farm, g.type, r2(g.x), r2(g.y), g.dx, g.dy, g.moving ? 1 : 0, Math.ceil(g.hp ?? GHP[g.type]), GHP[g.type], g.ko > 0 ? 1 : 0, g.hitT > 0 ? 1 : 0])),
     bu: bullets.map(b => [r2(b.x), r2(b.y)]),
     fx,
   };
   if (fires.size) s.fire = [...fires.keys()];
   if (EV.cow) s.cow = [r2(EV.cow.x), r2(EV.cow.y), EV.cow.dx || 1]; if (EV.chest) s.chest = [EV.chest.x, EV.chest.y];
   if (buildsDirty || tick % 20 === 0) { buildsDirty = false; s.bd = WD.builds.filter(b => b.type !== 'piege' && isActive(b.farm)).map(b => [b.id, b.farm, b.type, b.x, b.y, b.w, b.h]); }
-  if (tick % 20 === 0) { s.pub = pubInfo(); s.pr = WD.prices; s.ph = WD.ph; s.ct = WD.contract; s.pacts = WD.pacts; }
+  if (tick % 20 === 0) { s.pub = pubInfo(); s.pr = WD.prices; s.ph = WD.ph; s.sat = WD.sat; s.hot = [WD.hot, WD.cold]; s.ct = WD.contract; s.pacts = WD.pacts; }
   return s;
 }
 
@@ -1043,6 +1068,10 @@ function save() {
 function useWorld(o) {
   WD = o; const t = o.tiles;
   if (t && t.till.length === W * H) { till.set(t.till); wet.set(t.wet); crop.set(t.crop); grow.set(t.grow); fert.set(t.fert); }
+  else if (t && t.till.length === 159 * 78) { // ancienne carte à 8 fermes : tout descend de 34 cases
+    till.fill(0); wet.fill(0); crop.fill(-1); grow.fill(0); fert.fill(0);
+    for (let i = 0; i < t.till.length; i++) { const j = idx(i % 159, ((i / 159) | 0) + 34); till[j] = t.till[i]; wet[j] = t.wet[i]; crop[j] = t.crop[i]; grow[j] = t.grow[i]; fert[j] = t.fert[i]; }
+    WD._shift = 34; }
   else { till.fill(0); wet.fill(0); crop.fill(-1); grow.fill(0); fert.fill(0); }
   delete WD.tiles;
 }
@@ -1139,13 +1168,13 @@ server.on('upgrade', (req, socket) => {
       } else {
         if (pw.length < 4) { err('Nouveau joueur : choisissez un mot de passe (4 caractères minimum). Il protège votre ferme quand vous êtes déconnecté.', 'pw'); return; }
         if (LOBBY.on && joinedList().length >= WD.lobbyN) { err(`La partie est prévue pour ${WD.lobbyN} joueur${WD.lobbyN > 1 ? 's' : ''} et ils sont tous là. Demandez à l’hôte d’augmenter le nombre de joueurs.`); return; }
-        fi = SLOT_ORDER.find(k => !WD.farms[k].owner && (LOBBY.on || isActive(k))); if (fi === undefined) { err(LOBBY.on ? 'Le serveur est complet (8 fermes).' : `La partie est complète (${WD.lobbyN} joueurs).`); return; }
+        fi = SLOT_ORDER.find(k => !WD.farms[k].owner && (LOBBY.on || isActive(k))); if (fi === undefined) { err(LOBBY.on ? `Le serveur est complet (${MAX_FARMS} fermes).` : `La partie est complète (${WD.lobbyN} joueurs).`); return; }
         claimFarm(fi, name); setPw(WD.farms[fi], pw);
       }
       fails.delete(p.ip); WD.farms[fi].lastIp = p.ip;
       const fm = WD.farms[fi]; if (tok && checkTok(fm, tok)) fm.toks = fm.toks.filter(h => h !== sha(tok)); p.tok = newTok(fm);
       p.joined = true; p.farm = fi; p.x = fm.px; p.y = fm.py; if (!free(p.x, p.y, .28)) { const d = SLOTS[fi].door; p.x = d.x + .5; p.y = d.y + 1.5; } p.tool = fm.tool || 0; p.seed = fm.seed || 'ble'; p.bag = { items: fm.pbag || {}, cap: 300 + 200 * fm.up.bag }; fm.pbag = p.bag.items; p.hp = maxHp(fm); p.inv = 3;
-      p.joinedAt = Date.now(); c.send(JSON.stringify({ t: 'welcome', ver: VERSION, bld: BLD, products: PRODUCTS, bd: WD.builds.filter(b => b.type !== 'piege' && isActive(b.farm)).map(b => [b.id, b.farm, b.type, b.x, b.y, b.w, b.h]), act: SLOTS.map((_, k) => isActive(k) ? 1 : 0), lobby: LOBBY.on ? lobbyState() : null, tok: p.tok, id: p.id, farm: fi, pacts: WD.pacts, ghp: GHP, W, H, G: Array.from(G).join(''), fields: FIELDS, slots: SLOTS, build: BUILD, crops: CROPS, prices: PRICES, wage: WAGE, limit: LIMIT, tower: TOWER, gun: GUN, tt: TT, chat: WD.chat, pub: pubInfo(), pr: WD.prices, ph: WD.ph, ct: WD.contract, ti: tileDiff(true) }));
+      p.joinedAt = Date.now(); c.send(JSON.stringify({ t: 'welcome', ver: VERSION, bld: BLD, products: PRODUCTS, bd: WD.builds.filter(b => b.type !== 'piege' && isActive(b.farm)).map(b => [b.id, b.farm, b.type, b.x, b.y, b.w, b.h]), act: SLOTS.map((_, k) => isActive(k) ? 1 : 0), lobby: LOBBY.on ? lobbyState() : null, tok: p.tok, id: p.id, farm: fi, pacts: WD.pacts, ghp: GHP, W, H, town: [TOWN_Y0, TOWN_Y1], depth: DEPTH, pdepth: PDEPTH, G: Array.from(G).join(''), fields: FIELDS, slots: SLOTS, build: BUILD, crops: CROPS, prices: PRICES, wage: WAGE, limit: LIMIT, tower: TOWER, gun: GUN, tt: TT, chat: WD.chat, pub: pubInfo(), pr: WD.prices, ph: WD.ph, ct: WD.contract, ti: tileDiff(true) }));
       sys(`${fm.owner} est connecté.`); if (LOBBY.on) lobbySend(); else if (inPrep() && !inOwnFarm(p.farm, p.x, p.y)) sendHome(p);
       console.log(`[+] ${fm.owner} (ferme ${fi + 1})`);
       return;
@@ -1154,6 +1183,7 @@ server.on('upgrade', (req, socket) => {
     if (LOBBY.on) { if (m.t === 'act') lobbyAct(p, m); return; }
     if (m.t === 'in') {
       p.in = { ix: +m.ix || 0, iy: +m.iy || 0, use: !!m.use, fire: !!m.fire, rev: !!m.rev };
+      p.view = isFinite(+m.vx) && isFinite(+m.vy) && m.vx !== undefined ? { x: clamp(+m.vx, 0, W), y: clamp(+m.vy, 0, H) } : null;
       if (m.px !== undefined && !p.veh && !(p.ko > 0) && (m.tp | 0) === p.tp) {
         const px = +m.px, py = +m.py, now = Date.now() / 1000, el = Math.min(1, Math.max(.05, now - (p.lastAcc || now)));
         const fm = WD.farms[p.farm], maxd = p.stun > 0 ? .05 : (3.4 + .7 * fm.up.boots) * (p.slow > 0 ? .45 : 1) * el * 1.6 + .45;
@@ -1243,6 +1273,25 @@ const isBanned = (name, ip) => bans.some(b => b.n === String(name).toLowerCase()
 /* ---------------------------------------------------------------- bâtiments, production, défenses spéciales */
 const rint = (a, b) => Math.round(a + rnd() * (b - a));
 function pprice(k) { WD.pprices = WD.pprices || {}; return WD.pprices[k] || PRODUCTS[k].p; }
+// vend q kg sur la bourse : le prix baisse PENDANT la vente (la 1re caisse se vend mieux que la dernière)
+function marketSell(k, q) {
+  const prod = !!PRODUCTS[k], P = prod ? WD.pprices : WD.prices, base = prod ? PRODUCTS[k].p : CROPS[k].p, D = (prod ? PDEPTH : DEPTH)[k];
+  const p0 = prod ? pprice(k) : P[k], x = q / D, avg = x > 1e-6 ? (1 - Math.exp(-x)) / x : 1;
+  P[k] = Math.max(base * FLOOR, p0 * Math.exp(-x));
+  WD.sat = WD.sat || {}; WD.sat[k] = Math.min(3, (WD.sat[k] || 0) + x * .5);
+  return q * p0 * avg;
+}
+// chaque seconde : les cours remontent vers leur « valeur du jour », moins vite si le produit est saturé
+function marketTick() {
+  WD.sat = WD.sat || {}; WD.trend = WD.trend || {}; WD.pprices = WD.pprices || {};
+  const kr = 1 - Math.exp(-1 / RECOVER_S), ks = Math.exp(-Math.LN2 / SAT_HALF_S);
+  for (const k of CK.concat(PK)) {
+    const prod = !!PRODUCTS[k], P = prod ? WD.pprices : WD.prices, base = prod ? PRODUCTS[k].p : CROPS[k].p;
+    WD.sat[k] = (WD.sat[k] || 0) * ks;
+    const target = base * (WD.trend[k] || 1) / (1 + WD.sat[k]), cur = P[k] || base;
+    P[k] = clamp(cur + (target - cur) * kr, base * FLOOR, base * CEIL);
+  }
+}
 function saleMult(farm, k) { let m = (FB[farm] || {}).statue ? 1.1 : 1; if (EV.boost && EV.boost.until > tickTime && EV.boost.k === k) m *= EV.boost.mult; return m; }
 function newQuests(fm) {
   const pool = QUESTS.slice(); const out = [];
@@ -1321,7 +1370,10 @@ function trapFire(b, x, y) { b.gone = true; WD.builds = WD.builds.filter(q => q 
 const EV = { next: 120, cow: null, chest: null, boost: null };
 const roadTiles = []; // chemins hors des fermes
 for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { const i = idx(x, y); if (G0[i] === 1 && slotOf[i] < 0) roadTiles.push([x, y]); }
-function randRoad() { return roadTiles[Math.floor(rnd() * roadTiles.length)]; }
+function randRoad() { // un chemin proche d'une ferme de la partie (la carte peut être immense)
+  const act = SLOTS.filter((_, k) => isActive(k) && WD.farms[k].owner);
+  for (let n = 0; n < 60; n++) { const t = roadTiles[Math.floor(rnd() * roadTiles.length)]; if (G[idx(t[0], t[1])] !== 1) continue; if (!act.length || act.some(sl => Math.abs(t[0] - sl.door.x) < 30 && Math.abs(t[1] - sl.door.y) < 26)) return t; }
+  return roadTiles[Math.floor(rnd() * roadTiles.length)]; }
 function eventsTick(dt) {
   if (isNight()) { if (EV.cow) { EV.cow = null; } }
   EV.next -= dt;
@@ -1406,7 +1458,7 @@ if (CLOUD) setInterval(() => { try { save(); } catch (e) { } cloudPush(); }, 450
 /* ---------------------------------------------------------------- menu admin */
 function sendMap() { const msg = JSON.stringify({ t: 'map', G: Array.from(G).join(''), act: SLOTS.map((_, k) => isActive(k) ? 1 : 0) }); for (const p of players.values()) if (p.joined) p.ws.send(msg); }
 function resizeGame(n) {
-  n = Math.max(1, Math.min(8, n | 0)); WD.lobbyN = n;
+  n = Math.max(1, Math.min(MAX_FARMS, n | 0)); WD.lobbyN = n;
   if (LOBBY.on) { LOBBY.forced = false; if (joinedList().length < n) LOBBY.cd = 0; lobbySend(); return; }
   const act = SLOTS.map((_, k) => isActive(k)); let cnt = act.filter(Boolean).length;
   for (const own of [false, true]) for (const k of [...SLOT_ORDER].reverse()) if (cnt > n && act[k] && !playerOf(k) && !!WD.farms[k].owner === own) { act[k] = false; cnt--; }
@@ -1518,7 +1570,7 @@ function openLobby() {
 }
 function lobbyAct(p, m) {
   const host = lobbyHost() === p, fm = WD.farms[p.farm];
-  if (m.a === 'lobbyN' && host) { WD.lobbyN = Math.max(joinedList().length, 1, Math.min(8, m.n | 0)); LOBBY.forced = false; if (joinedList().length < WD.lobbyN) LOBBY.cd = 0; lobbySend(); }
+  if (m.a === 'lobbyN' && host) { WD.lobbyN = Math.max(joinedList().length, 1, Math.min(MAX_FARMS, m.n | 0)); LOBBY.forced = false; if (joinedList().length < WD.lobbyN) LOBBY.cd = 0; lobbySend(); }
   else if (m.a === 'lobbyGo' && host) { LOBBY.forced = true; LOBBY.cd = 3; lobbySend(); }
   else if (m.a === 'lobbyStop' && host) { LOBBY.forced = false; LOBBY.cd = 0; WD.lobbyN = Math.max(WD.lobbyN, joinedList().length + 1); lobbySend(); }
   else if (m.a === 'chat') {
@@ -1540,10 +1592,11 @@ function stepInner() {
   for (const v of WD.veh) if (isActive(v.farm)) vehUpdate(v, dt);
   for (const a of WD.agents) if (isActive(a.farm)) agentUpdate(a, dt);
   thievesUpdate(dt); jamTick(); prepTick(); defenseTick(dt); eventsTick(dt); firesTick(dt);
-  if (tick % 20 === 0) prodTick();
+  if (tick % 20 === 0) { prodTick(); marketTick(); }
   if (mapDirty) { mapDirty = false; sendMap(); }
   tick++;
   const snap = snapshot(tick); fx = [];
+  const AG = snap.ag, VE = snap.ve, GU = snap.gu; delete snap.ag; delete snap.ve; delete snap.gu;
   const common = JSON.stringify(snap).slice(0, -1);
   for (const p of players.values()) {
     if (!p.joined) continue;
@@ -1552,9 +1605,9 @@ function stepInner() {
     if (buf > 4 * 1024 * 1024) { console.log(`[!] ${WD.farms[p.farm].owner} : connexion trop lente, déconnexion`); try { p.ws.close(); } catch (e) { } continue; }
     if (buf > 256 * 1024 && tick % 4) continue;
     // « me » (données privées) envoyé seulement quand il change, et au moins une fois par seconde
-    const me = JSON.stringify(meInfo(p));
-    if (me !== p.lastMe || tick % 20 === 0) { p.lastMe = me; p.ws.send(common + ',"me":' + me + '}'); }
-    else p.ws.send(common + '}');
+    const me = JSON.stringify(meInfo(p)), ents = ',"ag":' + aoiJoin(AG, p) + ',"ve":' + aoiJoin(VE, p) + ',"gu":' + aoiJoin(GU, p);
+    if (me !== p.lastMe || tick % 20 === 0) { p.lastMe = me; p.ws.send(common + ents + ',"me":' + me + '}'); }
+    else p.ws.send(common + ents + '}');
   }
   if (tick % (20 * 30) === 0) saveAsync();
 }
@@ -1562,7 +1615,7 @@ function stepInner() {
 /* ---------------------------------------------------------------- démarrage */
 const FEATURES = [
   'Monde persistant qui ne s’arrête jamais (sauvegarde automatique toutes les 30 s)',
-  'Grande carte avec 8 fermes, un village central (marché, commissariat, mairie, armurerie)',
+  'Grande carte jusqu’à 20 fermes, un village central (marché, commissariat, mairie, armurerie)',
   'Chaque joueur a sa ferme : 4 champs, entrepôt, garage, retrouvée à chaque reconnexion avec le même nom',
   '6 cultures, arrosage, engrais, météo partagée (pluie, orage), journées de 8 min et nuits de 3 min',
   'Tracteurs et moissonneuses à conduire, module GPS pour tout faire en automatique',
@@ -1605,7 +1658,20 @@ const FEATURES = [
 ];
 function prepareWorld() {
 WD.builds = WD.builds || []; WD.pprices = WD.pprices || {};
-if (WD.layout !== 2) migrateLayout();
+if (WD.layout === 2 && WD.farms.length < SLOTS.length) {
+  const dy = WD._shift || 34; delete WD._shift;
+  for (const b of (WD.builds || [])) b.y += dy;
+  for (const t of WD.towers) t.y += dy;
+  for (const fm of WD.farms) { const sl = SLOTS[fm.slot]; fm.px = sl.door.x + .5; fm.py = sl.door.y + 1.5; }
+  for (const fm of WD.farms) { let n = 0; for (const v of WD.veh.filter(v => v.farm === fm.slot)) { const h = SLOTS[fm.slot].homes[n++ % 4]; v.home = { x: h[0], y: h[1] }; v.x = h[0]; v.y = h[1]; v.a = Math.PI / 2; v.auto = null; } }
+  for (const a of WD.agents) { const d = SLOTS[a.farm].door; a.x = d.x + .5; a.y = d.y + 1.5; }
+  for (const g of WD.guards) { const d = SLOTS[g.farm].door; g.x = d.x + .5; g.y = d.y + 2.5; }
+  WD.layout = 3; console.log('Carte agrandie : 20 fermes possibles (votre partie est conservée).');
+} else if (WD.layout === 2) WD.layout = 3;
+else if (WD.layout !== 3) migrateLayout();
+while (WD.farms.length < SLOTS.length) WD.farms.push(newFarm(WD.farms.length));
+if (WD.active) while (WD.active.length < SLOTS.length) WD.active.push(false);
+for (const fm of WD.farms) fm.color = FARM_COLORS[fm.slot];
 WD.meta = WD.meta || { id: 'p' + Date.now(), name: 'Partie 1', created: Date.now() };
 WD.nid = Math.max(WD.nid || 1, ...WD.agents.map(a => a.id + 1), ...WD.veh.map(v => v.id + 1), ...WD.towers.map(t => t.id + 1), ...WD.guards.map(g => g.id + 1), 1);
 for (const fm of WD.farms) { fm.raid = null; fm.lvl = fm.lvl || 0; fm.jamAt = 0; fm.jamStarted = false; fm.jamProt = 0; fm.up.armor = fm.up.armor || 0; fm.recent = fm.recent || 0; fm.stats.kills = fm.stats.kills || 0; fm.stats.deaths = fm.stats.deaths || 0; fm.stats.pillaged = fm.stats.pillaged || 0; }
@@ -1620,7 +1686,7 @@ for (const g of WD.guards) { if (g.hp === undefined) g.hp = GHP[g.type]; g.ko = 
 for (const t of WD.towers) if (t.hp === undefined) t.hp = towerMax(t);
 }
 function migrateLayout() {
-  WD.layout = 2;
+  WD.layout = 3;
   till.fill(0); wet.fill(0); crop.fill(-1); grow.fill(0); fert.fill(0);
   for (const fm of WD.farms) { const sl = SLOTS[fm.slot]; fm.px = sl.door.x + .5; fm.py = sl.door.y + 1.5; if (fm.owner) plantStart(fm.slot); }
   for (const fm of WD.farms) { let n = 0; for (const v of WD.veh.filter(v => v.farm === fm.slot)) { const h = SLOTS[fm.slot].homes[n++ % 4]; v.home = { x: h[0], y: h[1] }; v.x = h[0]; v.y = h[1]; v.a = Math.PI / 2; v.auto = null; } }
@@ -1650,7 +1716,7 @@ if (process.stdin.isTTY || process.stdin.readable) {
     else if (cmd === 'lancer') { if (LOBBY.on) startGame(); else console.log('La partie est déjà lancée.'); }
     else if (cmd === 'salon') openLobby();
     else if (cmd === 'ouvrir') { if (inPrep()) { PREP_END = tickTime; console.log('Préparation terminée.'); } else console.log('Les fermes sont déjà ouvertes.'); }
-    else if (cmd === 'joueurs') { WD.lobbyN = Math.max(joinedList().length, 1, Math.min(8, +rest[0] || 4)); LOBBY.forced = false; if (LOBBY.on) lobbySend(); console.log(`Nombre de joueurs attendus : ${WD.lobbyN}`); }
+    else if (cmd === 'joueurs') { WD.lobbyN = Math.max(joinedList().length, 1, Math.min(MAX_FARMS, +rest[0] || 4)); LOBBY.forced = false; if (LOBBY.on) lobbySend(); console.log(`Nombre de joueurs attendus : ${WD.lobbyN}`); }
     else if (cmd) console.log('Commandes : liste · mdp NOM · lancer · salon (pause + salle d’attente) · joueurs N · ouvrir (fin de la préparation)');
   });
 }
