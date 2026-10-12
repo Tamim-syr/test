@@ -17,3 +17,15 @@ python3 render.py part_0.mp4 0 12.1   # (4 morceaux en parallèle)
 # puis concat + voix (loudnorm) + sfx avec ffmpeg
 ```
 Dépendances : Python 3, Pillow, numpy, opencv-python-headless, ffmpeg.
+
+## Version 2 — outils open source ajoutés (`render_v2.py`)
+| Outil | Licence | Rôle |
+|---|---|---|
+| Depth Anything V2 Small (`depth.py`) | Apache-2.0 | carte de profondeur -> parallaxe 3D sur chaque dessin |
+| Grounding DINO tiny + SAM ViT-B (`segment.py`, `segment_all.py`) | Apache-2.0 | trouve un élément par son nom (« an airplane. ») et le découpe : drapeaux qui flottent, feu qui ondule, pigeons, fenêtre où tombe la neige, avion et pigeons retirés proprement (inpainting) |
+| VTracer + svgpathtools (`vector_draw.py`) | MIT | le premier dessin se trace trait par trait puis se remplit |
+| Pillow + Raqm, police Reem Kufi (OFL) | — | titres en arabe (« الجحش », « أبو لهب وفرعون ») |
+| Sons Kenney (`sons_kenney/`, `sfx_v2.py`) | CC0 | impacts, verre brisé, griffures sur les mots forts |
+
+Ordre : `python3 depth.py img/*.png` · `python3 segment_all.py` · `python3 whoosh.py sfx.wav && python3 sfx_v2.py` · `python3 render_v2.py ...`
+Dépendances en plus : torch (CPU), transformers, vtracer, svgpathtools, fonttools.
