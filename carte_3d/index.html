@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Anton;src:url(node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2)}
+@font-face{font-family:AntonX;src:url(node_modules/@fontsource/anton/files/anton-latin-ext-400-normal.woff2)}
+@font-face{font-family:Rubik;src:url(node_modules/@fontsource-variable/rubik/files/rubik-latin-wght-normal.woff2);font-weight:300 900}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#05070c}
+canvas{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#hud{position:absolute;inset:0;font-family:Anton,AntonX,sans-serif;color:#fff;pointer-events:none}
+.date{position:absolute;top:120px;left:0;right:0;text-align:center}
+.date .box{display:inline-block;background:rgba(8,10,14,.78);border:3px solid rgba(255,255,255,.85);border-radius:14px;padding:10px 34px 14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.6);overflow:hidden;height:118px;position:relative}
+.date .d{font-size:104px;line-height:118px;letter-spacing:3px;display:block}
+.date .k{font-family:Rubik;font-weight:800;font-size:28px;letter-spacing:6px;color:#ffd34d;margin-bottom:10px;text-shadow:0 3px 10px #000}
+.cap{position:absolute;left:60px;right:60px;top:1280px;text-align:center}
+.cap .t{font-size:118px;line-height:1.02;text-transform:uppercase;text-shadow:0 6px 0 rgba(0,0,0,.55),0 0 40px rgba(0,0,0,.8);-webkit-text-stroke:3px #000;paint-order:stroke fill}
+.cap .t span{display:inline-block}
+.cap .s{margin-top:18px;font-family:Rubik;font-weight:700;font-size:44px;line-height:1.25;display:inline-block;background:rgba(8,10,14,.82);padding:10px 22px;border-radius:10px;border-left:8px solid #1f9a4d}
+.legend{position:absolute;left:30px;bottom:50px;background:rgba(8,10,14,.75);border-radius:14px;padding:18px 22px;font-family:Rubik;font-weight:700;font-size:25px;line-height:1.5;border:2px solid rgba(255,255,255,.25)}
+.legend i{display:inline-block;width:34px;height:24px;border-radius:5px;margin-right:14px;vertical-align:-3px}
+.attr{position:absolute;right:18px;bottom:14px;font-family:Rubik;font-size:17px;color:rgba(255,255,255,.55)}
+.brand{position:absolute;left:30px;top:40px;font-family:Rubik;font-weight:800;font-size:28px;letter-spacing:2px;color:rgba(255,255,255,.8);text-shadow:0 2px 8px #000}
+.end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(12,40,24,.55),rgba(0,0,0,.92))}
+.end .h{font-size:150px;letter-spacing:4px;text-shadow:0 8px 30px #000}
+.end .m{font-family:Rubik;font-weight:700;font-size:46px;color:#ffd34d;letter-spacing:4px;margin-top:10px}
+.end .ab{margin-top:60px;font-family:Rubik;font-weight:900;font-size:44px;color:#fff;background:#C8232C;padding:14px 40px;border-radius:12px;transform:rotate(-4deg)}
+</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="hud">
+  <div class="brand">@SYRIEN_LIBRE</div>
+  <div class="date" id="date"><div class="k" id="dk">OFFENSIVE DE L'OPPOSITION</div><div class="box"><span class="d" id="dd">27 NOV. 2024</span></div></div>
+  <div class="cap" id="cap"><div class="t" id="ct"></div><div class="s" id="cs"></div></div>
+  <div class="legend" id="leg">
+    <div><i style="background:#C8232C"></i>Régime Assad</div>
+    <div><i style="background:#1F9A4D"></i>Opposition</div>
+    <div><i style="background:#E8B923"></i>Forces kurdes (FDS)</div>
+    <div><i style="background:repeating-linear-gradient(45deg,#eee 0 5px,#555 5px 10px)"></i>Golan occupé (Israël)</div>
+  </div>
+  <div class="attr">Imagerie : Sentinel-2 cloudless 2016 © EOX (données Copernicus) · Carte simplifiée</div>
+  <div class="end" id="end"><div class="h">@SYRIEN_LIBRE</div><div class="m">MÉMOIRE &amp; ACTUALITÉ</div><div class="ab">ABONNE-TOI</div></div>
+</div>
+<script type="module" src="scene.js"></script>
+</body></html>
