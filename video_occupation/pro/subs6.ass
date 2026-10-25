@@ -1,0 +1,39 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Sub,Inter SemiBold,52,&H00EEF2F4,&H00EEF2F4,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,0,2.2,2,200,200,92,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.16,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Aujourd'hui en Syrie,
+Dialogue: 0,0:00:01.18,0:00:03.71,Sub,,0,0,0,,{\fad(110,90)\blur0.6}l'occupation israélienne a {\c&H004F4DFF&}tué{\c&H00EEF2F4&} un {\c&H004F4DFF&}terroriste.{\c&H00EEF2F4&}
+Dialogue: 0,0:00:03.88,0:00:05.87,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Un {\c&H004F4DFF&}terroriste.{\c&H00EEF2F4&}
+Dialogue: 0,0:00:06.92,0:00:08.96,Sub,,0,0,0,,{\fad(110,90)\blur0.6}C'était tout simplement un {\c&H004F4DFF&}handicapé.{\c&H00EEF2F4&}
+Dialogue: 0,0:00:08.98,0:00:10.64,Sub,,0,0,0,,{\fad(110,90)\blur0.6}L'occupation l'a {\c&H004F4DFF&}tué{\c&H00EEF2F4&} de {\c&H004F4DFF&}sang-froid,{\c&H00EEF2F4&}
+Dialogue: 0,0:00:10.66,0:00:11.64,Sub,,0,0,0,,{\fad(110,90)\blur0.6}à l'ouest de Deraa,
+Dialogue: 0,0:00:11.66,0:00:13.66,Sub,,0,0,0,,{\fad(110,90)\blur0.6}lors de sa progression dans l'invasion du
+Dialogue: 0,0:00:13.68,0:00:14.64,Sub,,0,0,0,,{\fad(110,90)\blur0.6}territoire syrien.
+Dialogue: 0,0:00:14.66,0:00:15.65,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Mais la vraie question,
+Dialogue: 0,0:00:15.82,0:00:16.79,Sub,,0,0,0,,{\fad(110,90)\blur0.6}est-ce que c'est nouveau ?
+Dialogue: 0,0:00:17.28,0:00:18.02,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Tous les jours,
+Dialogue: 0,0:00:18.04,0:00:19.05,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Israël {\c&H004F4DFF&}bombarde,{\c&H00EEF2F4&}
+Dialogue: 0,0:00:19.22,0:00:20.21,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Israël {\c&H004F4DFF&}tue,{\c&H00EEF2F4&}
+Dialogue: 0,0:00:20.42,0:00:21.57,Sub,,0,0,0,,{\fad(110,90)\blur0.6}et personne ne dit {\c&H004F4DFF&}rien.{\c&H00EEF2F4&}
+Dialogue: 0,0:00:22.16,0:00:24.22,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Elle franchit toutes {\c&H004F4DFF&}limites{\c&H00EEF2F4&} qu'elle ne semble
+Dialogue: 0,0:00:24.24,0:00:25.06,Sub,,0,0,0,,{\fad(110,90)\blur0.6}pas connaître.
+Dialogue: 0,0:00:25.08,0:00:26.82,Sub,,0,0,0,,{\fad(110,90)\blur0.6}On va même plus demander de partager ou de
+Dialogue: 0,0:00:26.84,0:00:28.00,Sub,,0,0,0,,{\fad(110,90)\blur0.6}republier ou de liker.
+Dialogue: 0,0:00:28.02,0:00:29.31,Sub,,0,0,0,,{\fad(110,90)\blur0.6}À quoi bon ?
+Dialogue: 0,0:00:29.46,0:00:30.20,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Personne ne nous bougera.
+Dialogue: 0,0:00:30.22,0:00:31.26,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Une chose est sûre,
+Dialogue: 0,0:00:31.28,0:00:33.10,Sub,,0,0,0,,{\fad(110,90)\blur0.6}il est {\c&H004F4DFF&}vivant{\c&H00EEF2F4&} auprès de son Seigneur.
+Dialogue: 0,0:00:33.12,0:00:33.98,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Tandis que nous,
+Dialogue: 0,0:00:34.00,0:00:36.03,Sub,,0,0,0,,{\fad(110,90)\blur0.6}nous sommes les {\c&H004F4DFF&}morts{\c&H00EEF2F4&} face à l'injustice.
+Dialogue: 0,0:00:36.16,0:00:38.93,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Qu'Allah nous a ordonné de {\c&H004F4DFF&}condamner.{\c&H00EEF2F4&}
+Dialogue: 0,0:00:38.96,0:00:40.45,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Et c'est le strict minimum.
+Dialogue: 0,0:00:41.00,0:00:41.80,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Fi amanillah.
