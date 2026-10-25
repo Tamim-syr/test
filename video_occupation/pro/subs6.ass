@@ -7,6 +7,8 @@ WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Sub,Inter SemiBold,52,&H00EEF2F4,&H00EEF2F4,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,0,2.2,2,200,200,92,1
+Style: Kick,Inter SemiBold,18,&H004F4DFF,&H004F4DFF,&H00000000,&H64000000,0,0,0,0,100,100,5,0,1,0,1.5,7,0,0,0,1
+Style: Card,Inter ExtraBold,60,&H00EEF2F4,&H00EEF2F4,&H00000000,&H78000000,0,0,0,0,100,100,0,0,1,0,2.5,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -37,3 +39,13 @@ Dialogue: 0,0:00:34.00,0:00:36.03,Sub,,0,0,0,,{\fad(110,90)\blur0.6}nous sommes 
 Dialogue: 0,0:00:36.16,0:00:38.93,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Qu'Allah nous a ordonné de {\c&H004F4DFF&}condamner.{\c&H00EEF2F4&}
 Dialogue: 0,0:00:38.96,0:00:40.45,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Et c'est le strict minimum.
 Dialogue: 0,0:00:41.00,0:00:41.80,Sub,,0,0,0,,{\fad(110,90)\blur0.6}Fi amanillah.
+
+Dialogue: 1,0:00:06.95,0:00:08.85,Kick,,0,0,0,,{\an7\pos(94,112)\fad(200,150)}OUEST DE DERAA
+Dialogue: 1,0:00:06.95,0:00:08.85,Card,,0,0,0,,{\an7\pos(94,140)\fad(250,150)}La victime
+Dialogue: 1,0:00:06.95,0:00:08.85,Card,,0,0,0,,{\an7\pos(72,114)\fad(200,150)\p1\c&H4F4DFF&\bord0\shad0}m 0 0 l 3 0 3 92 0 92{\p0}
+Dialogue: 1,0:00:30.20,0:00:33.00,Kick,,0,0,0,,{\an7\pos(94,112)\fad(200,150)}FUNÉRAILLES
+Dialogue: 1,0:00:30.20,0:00:33.00,Card,,0,0,0,,{\an7\pos(94,140)\fad(250,150)}Le deuil
+Dialogue: 1,0:00:30.20,0:00:33.00,Card,,0,0,0,,{\an7\pos(72,114)\fad(200,150)\p1\c&H4F4DFF&\bord0\shad0}m 0 0 l 3 0 3 92 0 92{\p0}
+Dialogue: 1,0:00:33.10,0:00:35.75,Kick,,0,0,0,,{\an7\pos(94,112)\fad(200,150)}FUNÉRAILLES
+Dialogue: 1,0:00:33.10,0:00:35.75,Card,,0,0,0,,{\an7\pos(94,140)\fad(250,150)}Un dernier adieu
+Dialogue: 1,0:00:33.10,0:00:35.75,Card,,0,0,0,,{\an7\pos(72,114)\fad(200,150)\p1\c&H4F4DFF&\bord0\shad0}m 0 0 l 3 0 3 92 0 92{\p0}

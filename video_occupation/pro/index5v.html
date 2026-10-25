@@ -1,0 +1,61 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;src:url(node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2);font-weight:100 900}
+@font-face{font-family:Inter;src:url(node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2);font-weight:100 900;unicode-range:U+0100-024F}
+@font-face{font-family:InterTight;src:url(node_modules/@fontsource-variable/inter-tight/files/inter-tight-latin-wght-normal.woff2);font-weight:100 900}
+@font-face{font-family:Plex;src:url(node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2);font-weight:400}
+@font-face{font-family:Plex;src:url(node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2);font-weight:500}
+:root{--red:#ff4d4f;--ink:#f4f2ee}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#000}
+canvas{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#hud{position:absolute;inset:0;color:var(--ink);pointer-events:none;font-family:Inter,sans-serif}
+.vig{position:absolute;inset:0;background:
+  radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 50%,rgba(0,0,0,.5) 100%),
+  linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 72%,rgba(0,0,0,.5) 100%)}
+svg#ov{position:absolute;inset:0;width:1080px;height:1920px;overflow:visible}
+.brand{position:absolute;left:60px;top:150px;font-family:Plex;font-weight:500;font-size:15px;letter-spacing:.32em;color:rgba(244,242,238,.85)}
+.brand b{color:var(--red);font-weight:500}
+.coord{position:absolute;left:60px;top:178px;text-align:left;right:auto;font-family:Plex;font-size:15px;letter-spacing:.18em;color:rgba(244,242,238,.75);text-align:right}
+.card{position:absolute;left:60px;top:250px;padding-left:22px;max-width:900px}
+.card .bar{position:absolute;left:0;top:4px;width:3px;background:var(--red)}
+.card .k{font-family:Plex;font-weight:500;font-size:16px;letter-spacing:.3em;color:var(--red);text-transform:uppercase}
+.card .t{margin-top:12px;font-family:InterTight;font-weight:700;font-size:72px;line-height:1.04;letter-spacing:-.015em;text-shadow:0 2px 24px rgba(0,0,0,.55)}
+.card .t span{display:inline-block}
+.card .s{margin-top:14px;font-weight:400;font-size:30px;line-height:1.4;color:rgba(244,242,238,.82);text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.legend{position:absolute;left:60px;right:auto;bottom:560px;font-family:Plex;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,242,238,.8);line-height:2}
+.legend i{display:inline-block;width:26px;height:10px;margin-right:12px;vertical-align:0}
+.attr{position:absolute;left:60px;bottom:520px;font-size:10px;font-family:Plex;font-size:11px;letter-spacing:.08em;color:rgba(244,242,238,.45)}
+.lab{position:absolute;font-family:Inter;font-weight:600;font-size:15px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.lab.country{font-weight:500;font-size:20px;letter-spacing:.5em;color:rgba(255,255,255,.6)}
+.lab.zone{color:#ff8a8c;font-size:13px}
+.end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050608}
+.end .h{font-family:InterTight;font-weight:700;font-size:84px;letter-spacing:-.01em}
+.end .line{width:0;height:2px;background:var(--red);margin:26px 0}
+.end .m{font-family:Plex;font-weight:500;font-size:18px;letter-spacing:.42em;color:rgba(244,242,238,.75)}
+</style>
+</head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="hud">
+  <div class="vig"></div>
+  <svg id="ov" viewBox="0 0 1080 1920">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+    </defs>
+    <g id="g-border"></g><g id="g-arrows"></g><g id="g-miss"></g><g id="g-rings"></g><g id="g-ret"></g><g id="g-dots"></g>
+  </svg>
+  <div id="labs"></div>
+  <div class="brand">SYRIEN LIBRE <b>●</b> MÉMOIRE &amp; ACTUALITÉ</div>
+  <div class="coord" id="coord"></div>
+  <div class="card" id="card"><div class="bar" id="cbar"></div><div class="k" id="ck"></div><div class="t" id="ct"></div><div class="s" id="cs"></div></div>
+  <div class="legend" id="leg">
+    <div><i style="background:repeating-linear-gradient(45deg,#ff6b6d 0 2px,transparent 2px 6px);border:1px solid #ff6b6d"></i>Golan occupé par Israël · 1967</div>
+    <div><i style="background:rgba(255,77,79,.55);border:1px solid #ff6b6d"></i>Zone envahie depuis déc. 2024 · approx.</div>
+    <div><i style="height:2px;background:#ff4d4f;box-shadow:0 0 6px #ff4d4f"></i>Frappes israéliennes</div>
+  </div>
+  <div class="attr">Imagerie Sentinel-2 cloudless 2016 © EOX (Copernicus) · Relief Copernicus GLO-30 · Atmosphère Bruneton/takram</div>
+  <div class="end" id="end"><div class="h">Syrien Libre</div><div class="line" id="eline"></div><div class="m">MÉMOIRE &amp; ACTUALITÉ</div></div>
+</div>
+<script type="module" src="bundle5.js"></script>
+</body></html>

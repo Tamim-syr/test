@@ -21,12 +21,13 @@ function rnd(s) { s = Math.sin(s * 127.1 + 311.7) * 43758.5453; return s - Math.
 // ---------- rendu
 const canvas = document.getElementById("c");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(1); renderer.setSize(1920, 1080, false);
+const VERT = new URLSearchParams(location.search).has("v"), VW = VERT ? 1080 : 1920, VH = VERT ? 1920 : 1080, DSC = VERT ? 1.55 : 1;
+renderer.setPixelRatio(1); renderer.setSize(VW, VH, false);
 renderer.toneMapping = THREE.NoToneMapping;
 const scene = new THREE.Scene();
 const HAZE = new THREE.Color("#b9c9d9");
 scene.background = null; scene.fog = null;
-const camera = new THREE.PerspectiveCamera(30, 1920 / 1080, 0.3, 5000);
+const camera = new THREE.PerspectiveCamera(VERT ? 46 : 30, VW / VH, 0.3, 5000);
 // ---------- atmosphère physique (Bruneton / takram) + chaîne de post-production cinéma
 const composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
 composer.addPass(new RenderPass(scene, camera));
@@ -325,7 +326,7 @@ function camState(t) {
   const [t0, p0, d0, pi0, y0] = ks[i], [t1, p1, d1, pi1, y1] = ks[Math.min(i + 1, ks.length - 1)];
   const x = clamp((t - t0) / Math.max(1e-6, t1 - t0));
   const u = seg === 0 ? (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2) : x * x * x * (x * (x * 6 - 15) + 10);
-  const dist = Math.exp(lerp(Math.log(d0), Math.log(d1), u));
+  const dist = Math.exp(lerp(Math.log(d0), Math.log(d1), u)) * (lerp(pi0, pi1, u) > 20 ? DSC : 1.15);
   return { tgt: new THREE.Vector3().lerpVectors(p0, p1, u), dist, pitch: lerp(pi0, pi1, u), yaw: lerp(y0, y1, u) };
 }
 let shake = 0, FX = 1;
@@ -366,7 +367,7 @@ function burst(p, age, seed, big) {
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
 function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
-function proj(v) { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * 1920, y: (1 - p.y) / 2 * 1080, ok: p.z < 1 && p.z > -1 }; }
+function proj(v) { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * VW, y: (1 - p.y) / 2 * VH, ok: p.z < 1 && p.z > -1 }; }
 const ground3 = (v, dy = .05) => { const w = v.clone(); w.y = elev(w.x, w.z) + dy; return w; };
 // frontière syrienne (vectorielle)
 const SYRPTS = G.countries.SYR[0].filter((_, i) => i % 6 === 0).map(p => W3(p));
